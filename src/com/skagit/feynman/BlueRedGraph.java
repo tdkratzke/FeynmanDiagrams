@@ -214,6 +214,7 @@ public class BlueRedGraph {
 		matchOrUnMatch(idA, idB, /* match= */false);
 	}
 
+	/** Factored out the common part of match and unMatch. */
 	private void matchOrUnMatch(final int idA, final int idB, final boolean match) {
 		final int[] pairA = idToPair(_cumSizes, idA);
 		final int k0A = pairA[0], k1A = pairA[1];
