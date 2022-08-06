@@ -62,7 +62,6 @@ public class BlueIterator {
 			remaining -= 3;
 		}
 		blue[2] = remaining / 2;
-		return;
 	}
 
 	public static void main(final String[] args) {
