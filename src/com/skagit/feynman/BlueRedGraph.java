@@ -42,19 +42,18 @@ public class BlueRedGraph {
 		/** Fill in _bitSets and _cumCounts. */
 		_bitSets = new BitSet[nBlueComponents];
 		_cumCounts = new int[nBlueComponents];
-		for (int k = 0, cum = 0, k0 = 0; k < blueLength; ++k) {
+		for (int k = 0, k0 = 0; k < blueLength; ++k) {
+			final int nMatchable, nWithK;
 			if (k == 0) {
-				final int nMatchable = nInPath - 1;
-				_bitSets[0] = new BitSet(nMatchable);
-				_cumCounts[0] = cum + nMatchable;
-				k0 = 1;
-				continue;
+				nMatchable = nInPath - 1;
+				nWithK = 1;
+			} else {
+				nMatchable = k;
+				nWithK = _blue[k];
 			}
-			final int nMatchable = k;
-			final int nWithK = _blue[k];
 			for (int kX = 0; kX < nWithK; ++kX) {
-				_bitSets[k0] = new BitSet(k);
-				_cumCounts[k0] = _cumCounts[k0 - 1] + nMatchable;
+				_bitSets[k0] = new BitSet(nMatchable);
+				_cumCounts[k0] = (k0 == 0 ? 0 : _cumCounts[k0 - 1]) + nMatchable;
 				++k0;
 			}
 		}
@@ -104,7 +103,10 @@ public class BlueRedGraph {
 			final int sizeA = getBitSetSize(kA0);
 			final int cardinalityA = bitSetA.cardinality();
 			if (cardinalityA == 0) {
-				/** An untouched cycle. */
+				/**
+				 * We're on an unbroken cycle. Skip it if we've visited an unbroken cycle with
+				 * the same size. Otherwise, match id to the first vertex.
+				 */
 				if (usedSizes.add(sizeA)) {
 					final int idA = pairToId(_cumCounts, kA0, 0);
 					effectMatch(id, idA, /* setUnMatched= */false);
@@ -114,12 +116,12 @@ public class BlueRedGraph {
 				}
 				continue;
 			}
-			/** A cycle that has been broken. */
-			final int multiplierA = sizeA - cardinalityA;
-			if (multiplierA == 0) {
-				/** No room in this cycle. */
+			if (cardinalityA == sizeA) {
+				/** The component is full. */
 				continue;
 			}
+			/** We're on a broken cycle. */
+			final int multiplierA = sizeA - cardinalityA;
 			final int kA1 = bitSetA.nextClearBit(0);
 			final int idA = pairToId(_cumCounts, kA0, kA1);
 			if (isLegalPair(id, idA)) {
@@ -173,8 +175,7 @@ public class BlueRedGraph {
 
 	/**
 	 * If the graph is completed, then we say that it is connectable. Otherwise, we
-	 * need some component that has at least one matched matchable vertex but not
-	 * all of them.
+	 * need some broken component that is not fully matched.
 	 */
 	private boolean isConnectable() {
 		final int nBlueComponents = _bitSets.length;
@@ -301,7 +302,7 @@ public class BlueRedGraph {
 		return blue;
 	}
 
-	public static int getCount(final int nBlueEdges) {
+	public static int getFullCount(final int nBlueEdges) {
 		final int[] blue = new int[nBlueEdges - 1];
 
 		Arrays.fill(blue, 0);
@@ -320,12 +321,12 @@ public class BlueRedGraph {
 	}
 
 	/* Testing nBlue = 9. */
-	public final static void main1(final String[] args) {
-		getCount(9);
+	public final static void main(final String[] args) {
+		getFullCount(9);
 	}
 
 	/* Testing individual blue configurations. */
-	public final static void main(final String[] args) {
+	public final static void main1(final String[] args) {
 		final int[] blue = stringToBlue("[6 0,1]");
 		final BlueRedGraph blueRedGraph = new BlueRedGraph(blue);
 		final int count = blueRedGraph.recursiveGetCount(/* level= */0);
