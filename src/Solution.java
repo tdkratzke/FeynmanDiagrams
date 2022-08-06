@@ -1,6 +1,7 @@
 import java.util.*;
 import java.math.*;
 
+/** Test a check-in. */
 public class Solution {
     public static void main(String[] args) {
         Scanner input = new Scanner(System.in);
