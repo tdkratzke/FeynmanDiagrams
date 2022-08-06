@@ -8,7 +8,7 @@ import java.util.HashSet;
 public class BlueRedGraph {
 	final public int[] _blue;
 	final public BitSet[] _bitSets;
-	final public int[] _cumCounts;
+	final public int[] _cumSizes;
 
 	public BlueRedGraph(final int[] blue) {
 		_blue = blue;
@@ -27,34 +27,23 @@ public class BlueRedGraph {
 		/** Compute nBlueComponents. */
 		final int nBlueComponents;
 		{
-			int nBlueComponentsX = 0;
-			for (int k = 0; k < blueLength; ++k) {
-				if (k == 0) {
-					++nBlueComponentsX;
-				} else {
-					final int nWithK = _blue[k];
-					nBlueComponentsX += nWithK;
-				}
+			int nBlueComponentsX = 1;
+			for (int k = 2; k < blueLength; ++k) {
+				final int nSimilar = _blue[k];
+				nBlueComponentsX += nSimilar;
 			}
 			nBlueComponents = nBlueComponentsX;
 		}
 
-		/** Fill in _bitSets and _cumCounts. */
+		/** Fill in _bitSets and _cumSizes. */
 		_bitSets = new BitSet[nBlueComponents];
-		_cumCounts = new int[nBlueComponents];
+		_cumSizes = new int[nBlueComponents];
 		for (int k = 0, k0 = 0; k < blueLength; ++k) {
-			final int nMatchable, nWithK;
-			if (k == 0) {
-				nMatchable = nInPath - 1;
-				nWithK = 1;
-			} else {
-				nMatchable = k;
-				nWithK = _blue[k];
-			}
-			for (int kX = 0; kX < nWithK; ++kX) {
+			final int nMatchable = k == 0 ? (nInPath - 1) : k;
+			final int nSimilar = k == 0 ? 1 : _blue[k];
+			for (int kSimilar = 0; kSimilar < nSimilar; ++kSimilar, ++k0) {
 				_bitSets[k0] = new BitSet(nMatchable);
-				_cumCounts[k0] = (k0 == 0 ? 0 : _cumCounts[k0 - 1]) + nMatchable;
-				++k0;
+				_cumSizes[k0] = (k0 == 0 ? 0 : _cumSizes[k0 - 1]) + nMatchable;
 			}
 		}
 	}
@@ -68,7 +57,7 @@ public class BlueRedGraph {
 			return 1;
 		}
 		final int id = getSmallestUnMatchedId();
-		final int[] pair = idToPair(_cumCounts, id);
+		final int[] pair = idToPair(_cumSizes, id);
 		final int k0 = pair[0], k1 = pair[1];
 		final BitSet bitSet0 = _bitSets[k0];
 		final int size0 = getBitSetSize(k0);
@@ -85,12 +74,12 @@ public class BlueRedGraph {
 		 */
 		final int multiplier0 = size0 - cardinality0 - 1;
 		if (multiplier0 > 0) {
-			final int kX1 = bitSet0.nextClearBit(k1 + 1);
-			final int idX = pairToId(_cumCounts, k0, kX1);
+			final int k1X = bitSet0.nextClearBit(k1 + 1);
+			final int idX = pairToId(_cumSizes, k0, k1X);
 			if (isLegalPair(id, idX)) {
-				effectMatch(id, idX, /* setUnMatched= */false);
+				match(id, idX);
 				final int thisCount = recursiveGetCount(level + 1);
-				effectMatch(id, idX, /* setUnMatched= */true);
+				unMatch(id, idX);
 				count += multiplier0 * thisCount;
 			}
 		}
@@ -98,20 +87,20 @@ public class BlueRedGraph {
 		/** Match id with ids that are not in its component. */
 		final int nBlueComponents = _bitSets.length;
 		final HashSet<Integer> usedSizes = new HashSet<>();
-		for (int kA0 = k0 + 1; kA0 < nBlueComponents; ++kA0) {
-			final BitSet bitSetA = _bitSets[kA0];
-			final int sizeA = getBitSetSize(kA0);
+		for (int k0A = k0 + 1; k0A < nBlueComponents; ++k0A) {
+			final BitSet bitSetA = _bitSets[k0A];
+			final int sizeA = getBitSetSize(k0A);
 			final int cardinalityA = bitSetA.cardinality();
 			if (cardinalityA == 0) {
 				/**
-				 * We're on an unbroken cycle. Skip it if we've visited an unbroken cycle with
-				 * the same size. Otherwise, match id to the first vertex.
+				 * k0A is an unbroken cycle. Skip it if we've visited an unbroken cycle with the
+				 * same size. Otherwise, match id to the first vertex.
 				 */
 				if (usedSizes.add(sizeA)) {
-					final int idA = pairToId(_cumCounts, kA0, 0);
-					effectMatch(id, idA, /* setUnMatched= */false);
+					final int idA = pairToId(_cumSizes, k0A, 0);
+					match(id, idA);
 					final int thisCount = recursiveGetCount(level + 1);
-					effectMatch(id, idA, /* setUnMatched= */true);
+					unMatch(id, idA);
 					count += thisCount;
 				}
 				continue;
@@ -123,11 +112,11 @@ public class BlueRedGraph {
 			/** We're on a broken cycle. */
 			final int multiplierA = sizeA - cardinalityA;
 			final int kA1 = bitSetA.nextClearBit(0);
-			final int idA = pairToId(_cumCounts, kA0, kA1);
+			final int idA = pairToId(_cumSizes, k0A, kA1);
 			if (isLegalPair(id, idA)) {
-				effectMatch(id, idA, /* setUnMatched= */false);
+				match(id, idA);
 				final int thisCount = recursiveGetCount(level + 1);
-				effectMatch(id, idA, /* setUnMatched= */true);
+				unMatch(id, idA);
 				count += multiplierA * thisCount;
 			}
 		}
@@ -138,13 +127,13 @@ public class BlueRedGraph {
 	 * If adding (idA,idB) leaves the graph connectable, then (idA,idB) is legal.
 	 */
 	private boolean isLegalPair(final int idA, final int idB) {
-		final int[] pairA = idToPair(_cumCounts, idA);
+		final int[] pairA = idToPair(_cumSizes, idA);
 		final int kA0 = pairA[0];
 		final int kA1 = pairA[1];
 		final BitSet bitSetA = _bitSets[kA0];
 		final boolean aWasSet = bitSetA.get(kA1);
 		bitSetA.set(kA1);
-		final int[] pairB = idToPair(_cumCounts, idB);
+		final int[] pairB = idToPair(_cumSizes, idB);
 		final int kB0 = pairB[0];
 		final int kB1 = pairB[1];
 		final BitSet bitSetB = _bitSets[kB0];
@@ -195,7 +184,7 @@ public class BlueRedGraph {
 		/**
 		 * <pre>
 		 * If there are 2 blue components with sizes 3 and 4, then
-		 * _cumCounts will be {3,7}.
+		 * _cumSizes will be {3,7}.
 		 * id = 0 -> {0,0}
 		 * id = 3 ->{1,0}
 		 * etc.
@@ -217,15 +206,23 @@ public class BlueRedGraph {
 		return (k0 == 0 ? 0 : cumCounts[k0 - 1]) + k1;
 	}
 
-	private void effectMatch(final int idA, final int idB, final boolean setUnMatched) {
-		final int[] pairA = idToPair(_cumCounts, idA);
-		final int kA0 = pairA[0], kA1 = pairA[1];
-		final BitSet bitSetA = _bitSets[kA0];
-		final int[] pairB = idToPair(_cumCounts, idB);
-		final int kB0 = pairB[0], kB1 = pairB[1];
-		final BitSet bitSetB = _bitSets[kB0];
-		bitSetA.set(kA1, !setUnMatched);
-		bitSetB.set(kB1, !setUnMatched);
+	private void match(final int idA, final int idB) {
+		matchOrUnMatch(idA, idB, /* match= */true);
+	}
+
+	private void unMatch(final int idA, final int idB) {
+		matchOrUnMatch(idA, idB, /* match= */false);
+	}
+
+	private void matchOrUnMatch(final int idA, final int idB, final boolean match) {
+		final int[] pairA = idToPair(_cumSizes, idA);
+		final int k0A = pairA[0], k1A = pairA[1];
+		final BitSet bitSetA = _bitSets[k0A];
+		final int[] pairB = idToPair(_cumSizes, idB);
+		final int k0B = pairB[0], k1B = pairB[1];
+		final BitSet bitSetB = _bitSets[k0B];
+		bitSetA.set(k1A, match);
+		bitSetB.set(k1B, match);
 	}
 
 	private int getSmallestUnMatchedId() {
@@ -235,14 +232,14 @@ public class BlueRedGraph {
 			final int k1 = bitSet.nextClearBit(0);
 			final int bitSetSize = getBitSetSize(k0);
 			if (k1 < bitSetSize) {
-				return pairToId(_cumCounts, k0, k1);
+				return pairToId(_cumSizes, k0, k1);
 			}
 		}
 		return -1;
 	}
 
 	private int getBitSetSize(final int k0) {
-		return _cumCounts[k0] - (k0 == 0 ? 0 : _cumCounts[k0 - 1]);
+		return _cumSizes[k0] - (k0 == 0 ? 0 : _cumSizes[k0 - 1]);
 	}
 
 	/** Utility routine for creating a succinct string from a blue vector. */
@@ -327,7 +324,7 @@ public class BlueRedGraph {
 
 	/* Testing individual blue configurations. */
 	public final static void main1(final String[] args) {
-		final int[] blue = stringToBlue("[6 0,1]");
+		final int[] blue = stringToBlue("[3 1]");
 		final BlueRedGraph blueRedGraph = new BlueRedGraph(blue);
 		final int count = blueRedGraph.recursiveGetCount(/* level= */0);
 		System.out.printf("\ncount[%d] for %s", count, blueToString(blue));
