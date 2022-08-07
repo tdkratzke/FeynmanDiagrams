@@ -5,19 +5,19 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 
-public class BlueRedGraph {
-	final public int[] _blue;
+public class BlueGraph {
+	final public int[] _spec;
 	final public BitSet[] _bitSets;
 	final public int[] _cumSizes;
 
-	public BlueRedGraph(final int[] blue) {
-		_blue = blue;
-		final int blueLength = _blue.length;
-		final int nInPath = _blue[0];
+	public BlueGraph(final int[] spec) {
+		_spec = spec;
+		final int specLength = _spec.length;
+		final int nInPath = _spec[0];
 
 		/**
 		 * <pre>
-		 * k indexes _blue.
+		 * k indexes _spec.
 		 * id indexes matchable vertices.
 		 * k0 indexes components.
 		 * k1 indexes matchable vertices within a component.
@@ -28,8 +28,8 @@ public class BlueRedGraph {
 		final int nBlueComponents;
 		{
 			int nBlueComponentsX = 1;
-			for (int k = 2; k < blueLength; ++k) {
-				final int nSimilar = _blue[k];
+			for (int k = 2; k < specLength; ++k) {
+				final int nSimilar = _spec[k];
 				nBlueComponentsX += nSimilar;
 			}
 			nBlueComponents = nBlueComponentsX;
@@ -38,9 +38,9 @@ public class BlueRedGraph {
 		/** Fill in _bitSets and _cumSizes. */
 		_bitSets = new BitSet[nBlueComponents];
 		_cumSizes = new int[nBlueComponents];
-		for (int k = 0, k0 = 0; k < blueLength; ++k) {
+		for (int k = 0, k0 = 0; k < specLength; ++k) {
 			final int nMatchable = k == 0 ? (nInPath - 1) : k;
-			final int nSimilar = k == 0 ? 1 : _blue[k];
+			final int nSimilar = k == 0 ? 1 : _spec[k];
 			for (int kSimilar = 0; kSimilar < nSimilar; ++kSimilar, ++k0) {
 				_bitSets[k0] = new BitSet(nMatchable);
 				_cumSizes[k0] = (k0 == 0 ? 0 : _cumSizes[k0 - 1]) + nMatchable;
@@ -243,14 +243,14 @@ public class BlueRedGraph {
 		return _cumSizes[k0] - (k0 == 0 ? 0 : _cumSizes[k0 - 1]);
 	}
 
-	/** Utility routine for creating a succinct string from a blue vector. */
-	static String blueToString(final int[] blue) {
-		String s = String.format("[%d", blue[0]);
-		final int n = blue.length;
+	/** Utility routine for creating a succinct string from a spec. */
+	static String specToString(final int[] spec) {
+		String s = String.format("[%d", spec[0]);
+		final int n = spec.length;
 		for (int k = 2; k < n; ++k) {
 			boolean gotOne = false;
 			for (int kk = k; kk < n; ++kk) {
-				if (blue[kk] != 0) {
+				if (spec[kk] != 0) {
 					gotOne = true;
 					break;
 				}
@@ -258,77 +258,76 @@ public class BlueRedGraph {
 			if (!gotOne) {
 				break;
 			}
-			s += String.format("%s%d", k == 2 ? " " : ",", blue[k]);
+			s += String.format("%s%d", k == 2 ? " " : ",", spec[k]);
 		}
 		s += "]";
 		return s;
 	}
 
 	/**
-	 * Utility routine for creating a blue from the string that is produced by
-	 * blueToString.
+	 * Utility routine for creating a spec from the string that is produced by
+	 * specToString.
 	 */
-	static int[] stringToBlue(final String blueString) {
-		final String[] fields = blueString.trim().split("[\\s,\\[\\]]+");
-		final int nFields, intArray[];
+	static int[] stringToSpec(final String specString) {
+		final String[] fields = specString.trim().split("[\\s,\\[\\]]+");
+		final int nFields, fieldsArray[];
 		{
 			final int nFieldsX = fields.length;
-			final ArrayList<Integer> intsList = new ArrayList<>();
+			final ArrayList<Integer> fieldsList = new ArrayList<>();
 			for (int k = 0; k < nFieldsX; ++k) {
 				try {
-					intsList.add(Integer.parseInt(fields[k]));
+					fieldsList.add(Integer.parseInt(fields[k]));
 				} catch (final NumberFormatException e) {
 				}
 			}
-			nFields = intsList.size();
+			nFields = fieldsList.size();
 			if (nFields < 1) {
 				return null;
 			}
-			intArray = new int[nFields];
+			fieldsArray = new int[nFields];
 			for (int k = 0; k < nFields; ++k) {
-				intArray[k] = intsList.get(k);
+				fieldsArray[k] = fieldsList.get(k);
 			}
 		}
-		int nBlueEdges = intArray[0];
+		int nBlueEdges = fieldsArray[0];
 		for (int k = 1; k < nFields; ++k) {
-			nBlueEdges += (k + 1) * intArray[k];
+			nBlueEdges += (k + 1) * fieldsArray[k];
 		}
-		final int[] blue = new int[nBlueEdges - 1];
-		Arrays.fill(blue, 0);
-		blue[0] = intArray[0];
-		System.arraycopy(intArray, 1, blue, 2, nFields - 1);
-		return blue;
+		final int[] spec = new int[nBlueEdges - 1];
+		Arrays.fill(spec, 0);
+		spec[0] = fieldsArray[0];
+		System.arraycopy(fieldsArray, 1, spec, 2, nFields - 1);
+		return spec;
 	}
 
-	public static int getFullCount(final int nBlueEdges) {
+	public static int feynman_F(final int n) {
+		final int nBlueEdges = n + 1;
 		final int[] blue = new int[nBlueEdges - 1];
-
 		Arrays.fill(blue, 0);
+		System.out.printf("n[%d] (nBlueEdges[%d])", n, nBlueEdges);
 		for (int globalCount = 0;;) {
 			BlueIterator.nextBlue(blue);
 			if (blue[0] == 0) {
 				return globalCount;
 			}
-			final BlueRedGraph blueRedGraph = new BlueRedGraph(blue);
-			final int thisCount = blueRedGraph.recursiveGetCount(/* level= */0);
+			final BlueGraph blueGraph = new BlueGraph(blue);
+			final int thisCount = blueGraph.recursiveGetCount(/* level= */0);
 			globalCount += thisCount;
 			System.out.printf("\n%s, count[%d], globalCount[%d]", //
-					blueToString(blue), thisCount, globalCount);
+					specToString(blue), thisCount, globalCount);
 		}
-
 	}
 
-	/* Testing nBlue = 9. */
+	/* Testing individual blue configurations or testing nBlue = 9. */
 	public final static void main(final String[] args) {
-		getFullCount(9);
-	}
-
-	/* Testing individual blue configurations. */
-	public final static void main1(final String[] args) {
-		final int[] blue = stringToBlue("[3 1]");
-		final BlueRedGraph blueRedGraph = new BlueRedGraph(blue);
-		final int count = blueRedGraph.recursiveGetCount(/* level= */0);
-		System.out.printf("\ncount[%d] for %s", count, blueToString(blue));
+		final int[] individualSpecString = null; // stringToSpec("[4 0,0,0,1]");
+		if (individualSpecString != null) {
+			final BlueGraph blueGraph = new BlueGraph(individualSpecString);
+			final int count = blueGraph.recursiveGetCount(/* level= */0);
+			System.out.printf("\ncount[%d] for %s", count, specToString(individualSpecString));
+		} else {
+			feynman_F(8);
+		}
 	}
 
 	/** Testing idToPair. */

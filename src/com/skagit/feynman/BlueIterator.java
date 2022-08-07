@@ -65,8 +65,8 @@ public class BlueIterator {
 	}
 
 	public static void main(final String[] args) {
-		final int[] blue = BlueRedGraph.stringToBlue("[10 0,1]");
-		System.out.printf("\n%s", BlueRedGraph.blueToString(blue));
+		final int[] blue = BlueGraph.stringToSpec("[10 0,1]");
+		System.out.printf("\n%s", BlueGraph.specToString(blue));
 	}
 
 	public static void main0(final String[] args) {
@@ -78,7 +78,7 @@ public class BlueIterator {
 			if (blue[0] == 0) {
 				break;
 			}
-			System.out.printf("\n%s", BlueRedGraph.blueToString(blue));
+			System.out.printf("\n%s", BlueGraph.specToString(blue));
 		}
 	}
 
