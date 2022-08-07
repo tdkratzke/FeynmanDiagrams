@@ -306,7 +306,7 @@ public class BlueGraph {
 		Arrays.fill(blue, 0);
 		System.out.printf("n[%d] (nBlueEdges[%d])", n, nBlueEdges);
 		for (int globalCount = 0;;) {
-			BlueIterator.nextBlue(blue);
+			SpecIterator.nextSpec(blue);
 			if (blue[0] == 0) {
 				return globalCount;
 			}
