@@ -9,6 +9,7 @@ public class BlueGraph {
 	final public int[] _spec;
 	final public BitSet[] _bitSets;
 	final public int[] _cumSizes;
+	final private int _nRedEdgesToPlace;
 
 	public BlueGraph(final int[] spec) {
 		_spec = spec;
@@ -24,15 +25,18 @@ public class BlueGraph {
 		 * </pre>
 		 */
 
-		/** Compute nBlueComponents. */
+		/** Compute and nBlueComponents. */
 		final int nBlueComponents;
 		{
 			int nBlueComponentsX = 1;
+			int nBlueVerticesOfInterest = _spec[0] - 1;
 			for (int k = 2; k < specLength; ++k) {
 				final int nSimilar = _spec[k];
+				nBlueVerticesOfInterest += nSimilar * k;
 				nBlueComponentsX += nSimilar;
 			}
 			nBlueComponents = nBlueComponentsX;
+			_nRedEdgesToPlace = nBlueVerticesOfInterest / 2;
 		}
 
 		/** Fill in _bitSets and _cumSizes. */
@@ -49,11 +53,12 @@ public class BlueGraph {
 	}
 
 	/**
-	 * Gets the number of ways of completing the red edges. level is a debugging
-	 * parameter that indicates how deep into the recursion we are.
+	 * Does the heavy lifting. Gets the number of ways of completing the red edges.
+	 * The recursion level and the number of red edges placed is the same.
 	 */
-	private int recursiveGetCount(final int level) {
-		if (isComplete()) {
+	private int recursiveGetCount(final int nRedEdgesPlaced) {
+		if (nRedEdgesPlaced == _nRedEdgesToPlace) {
+			/** We're done. The count is this placement and only this one. */
 			return 1;
 		}
 		final int id = getSmallestUnMatchedId();
@@ -67,7 +72,7 @@ public class BlueGraph {
 
 		/**
 		 * <pre>
-		 * Start by matching id with some element in its own component,recursively get the count
+		 * Start by matching id with some element in its own component,recursively get the count,
 		 * and multiply it by the number of unMatched elements in that component
 		 * (besides id).
 		 * </pre>
@@ -78,7 +83,7 @@ public class BlueGraph {
 			final int idX = pairToId(_cumSizes, k0, k1X);
 			if (isLegalPair(id, idX)) {
 				match(id, idX);
-				final int thisCount = recursiveGetCount(level + 1);
+				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
 				unMatch(id, idX);
 				count += multiplier0 * thisCount;
 			}
@@ -91,31 +96,31 @@ public class BlueGraph {
 			final BitSet bitSetA = _bitSets[k0A];
 			final int sizeA = getBitSetSize(k0A);
 			final int cardinalityA = bitSetA.cardinality();
+			/**
+			 * If k0A is an unopened cycle, skip it if we've visited an unopened cycle with
+			 * the same size. Otherwise, match id to the first vertex and the multiplier is
+			 * 1.
+			 */
 			if (cardinalityA == 0) {
-				/**
-				 * k0A is an unbroken cycle. Skip it if we've visited an unbroken cycle with the
-				 * same size. Otherwise, match id to the first vertex.
-				 */
 				if (usedSizes.add(sizeA)) {
 					final int idA = pairToId(_cumSizes, k0A, 0);
 					match(id, idA);
-					final int thisCount = recursiveGetCount(level + 1);
+					final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
 					unMatch(id, idA);
 					count += thisCount;
 				}
 				continue;
 			}
+			/** We're on an open cycle. Skip it if it's full. */
 			if (cardinalityA == sizeA) {
-				/** The component is full. */
 				continue;
 			}
-			/** We're on a broken cycle. */
 			final int multiplierA = sizeA - cardinalityA;
 			final int kA1 = bitSetA.nextClearBit(0);
 			final int idA = pairToId(_cumSizes, k0A, kA1);
 			if (isLegalPair(id, idA)) {
 				match(id, idA);
-				final int thisCount = recursiveGetCount(level + 1);
+				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
 				unMatch(id, idA);
 				count += multiplierA * thisCount;
 			}
@@ -149,34 +154,29 @@ public class BlueGraph {
 		return returnValue;
 	}
 
-	private boolean isComplete() {
+	/**
+	 * If the graph is complete, then we say that it is connectable. Otherwise, we
+	 * need some open component that is not fully matched.
+	 */
+	private boolean isConnectable() {
 		final int nBlueComponents = _bitSets.length;
+		boolean isComplete = true;
 		for (int k0 = 0; k0 < nBlueComponents; ++k0) {
 			final BitSet bitSet = _bitSets[k0];
 			final int cardinality = bitSet.cardinality();
 			final int size = getBitSetSize(k0);
 			if (cardinality < size) {
-				return false;
+				isComplete = false;
+				if (0 < cardinality) {
+					/** This component is started, but not complete. The graph is connectable. */
+					return true;
+				}
 			}
 		}
-		return true;
-	}
-
-	/**
-	 * If the graph is completed, then we say that it is connectable. Otherwise, we
-	 * need some broken component that is not fully matched.
-	 */
-	private boolean isConnectable() {
-		final int nBlueComponents = _bitSets.length;
-		for (int k0 = 0; k0 < nBlueComponents; ++k0) {
-			final BitSet bitSet = _bitSets[k0];
-			final int cardinality = bitSet.cardinality();
-			final int size = getBitSetSize(k0);
-			if (0 < cardinality && cardinality < size) {
-				return true;
-			}
-		}
-		return isComplete();
+		/**
+		 * The only way for this graph to be connectable is if it's already complete.
+		 */
+		return isComplete;
 	}
 
 	/** idToPair and pairToId are static to make debugging simpler. */
@@ -186,7 +186,7 @@ public class BlueGraph {
 		 * If there are 2 blue components with sizes 3 and 4, then
 		 * _cumSizes will be {3,7}.
 		 * id = 0 -> {0,0}
-		 * id = 3 ->{1,0}
+		 * id = 3 -> {1,0}
 		 * etc.
 		 * </pre>
 		 */
@@ -300,6 +300,7 @@ public class BlueGraph {
 		return spec;
 	}
 
+	/** The punchline. */
 	public static int feynman_F(final int n) {
 		final int nBlueEdges = n + 1;
 		final int[] blue = new int[nBlueEdges - 1];
@@ -311,7 +312,7 @@ public class BlueGraph {
 				return globalCount;
 			}
 			final BlueGraph blueGraph = new BlueGraph(blue);
-			final int thisCount = blueGraph.recursiveGetCount(/* level= */0);
+			final int thisCount = blueGraph.recursiveGetCount(/* nRedEdgesPlaced= */0);
 			globalCount += thisCount;
 			System.out.printf("\n%s, count[%d], globalCount[%d]", //
 					specToString(blue), thisCount, globalCount);
@@ -323,7 +324,7 @@ public class BlueGraph {
 		final int[] individualSpecString = null; // stringToSpec("[4 0,0,0,1]");
 		if (individualSpecString != null) {
 			final BlueGraph blueGraph = new BlueGraph(individualSpecString);
-			final int count = blueGraph.recursiveGetCount(/* level= */0);
+			final int count = blueGraph.recursiveGetCount(/* nRedEdgesPlaced= */0);
 			System.out.printf("\ncount[%d] for %s", count, specToString(individualSpecString));
 		} else {
 			feynman_F(8);
