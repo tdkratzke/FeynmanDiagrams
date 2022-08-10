@@ -1,3 +1,6 @@
+Example:
+Four blue edges in the path, five blue edges in the only cycle.
+
 We have three vertices P0, P1, and P2, which are the internal vertices of a directed path of
 four blue edges. The five vertices C0, C1, C2, C3, and C4 are the vertices of a directed cycle
 of five blue edges.

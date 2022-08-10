@@ -61,8 +61,7 @@ public class BlueGraph {
 			/** We're done. The count is this placement and only this one. */
 			return 1;
 		}
-		final int id = getSmallestUnMatchedId();
-		final int[] pair = idToPair(_cumSizes, id);
+		final int[] pair = getSmallestUnMatchedPair();
 		final int k0 = pair[0], k1 = pair[1];
 		final BitSet bitSet0 = _bitSets[k0];
 		final int size0 = getBitSetSize(k0);
@@ -72,7 +71,7 @@ public class BlueGraph {
 
 		/**
 		 * <pre>
-		 * Start by matching id with some element in its own component,recursively get the count,
+		 * Start by matching id with some vertex in its own component,recursively get the count,
 		 * and multiply it by the number of unMatched elements in that component
 		 * (besides id).
 		 * </pre>
@@ -80,11 +79,13 @@ public class BlueGraph {
 		final int multiplier0 = size0 - cardinality0 - 1;
 		if (multiplier0 > 0) {
 			final int k1X = bitSet0.nextClearBit(k1 + 1);
-			final int idX = pairToId(_cumSizes, k0, k1X);
-			if (isLegalPair(id, idX)) {
-				match(id, idX);
+			final int[] pairX = new int[] {
+					k0, k1X
+			};
+			if (isLegalPair(pair, pairX)) {
+				match(pair, pairX);
 				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
-				unMatch(id, idX);
+				unMatch(pair, pairX);
 				count += multiplier0 * thisCount;
 			}
 		}
@@ -92,64 +93,65 @@ public class BlueGraph {
 		/** Match id with ids that are not in its component. */
 		final int nBlueComponents = _bitSets.length;
 		final HashSet<Integer> usedSizes = new HashSet<>();
-		for (int k0A = k0 + 1; k0A < nBlueComponents; ++k0A) {
-			final BitSet bitSetA = _bitSets[k0A];
-			final int sizeA = getBitSetSize(k0A);
-			final int cardinalityA = bitSetA.cardinality();
+		for (int k0X = k0 + 1; k0X < nBlueComponents; ++k0X) {
+			final BitSet bitSetX = _bitSets[k0X];
+			final int sizeX = getBitSetSize(k0X);
+			final int cardinalityX = bitSetX.cardinality();
 			/**
-			 * If k0A is an unopened cycle, skip it if we've visited an unopened cycle with
+			 * If k0X is an unopened cycle, skip it if we've visited an unopened cycle with
 			 * the same size. Otherwise, match id to the first vertex and the multiplier is
 			 * 1.
 			 */
-			if (cardinalityA == 0) {
-				if (usedSizes.add(sizeA)) {
-					final int idA = pairToId(_cumSizes, k0A, 0);
-					match(id, idA);
+			if (cardinalityX == 0) {
+				if (usedSizes.add(sizeX)) {
+					final int[] pairX = new int[] {
+							k0X, 0
+					};
+					match(pair, pairX);
 					final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
-					unMatch(id, idA);
+					unMatch(pair, pairX);
 					count += thisCount;
 				}
 				continue;
 			}
 			/** We're on an open cycle. Skip it if it's full. */
-			if (cardinalityA == sizeA) {
+			if (cardinalityX == sizeX) {
 				continue;
 			}
-			final int multiplierA = sizeA - cardinalityA;
-			final int kA1 = bitSetA.nextClearBit(0);
-			final int idA = pairToId(_cumSizes, k0A, kA1);
-			if (isLegalPair(id, idA)) {
-				match(id, idA);
+			final int multiplierX = sizeX - cardinalityX;
+			final int k1X = bitSetX.nextClearBit(0);
+			final int[] pairX = new int[] {
+					k0X, k1X
+			};
+			if (isLegalPair(pair, pairX)) {
+				match(pair, pairX);
 				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
-				unMatch(id, idA);
-				count += multiplierA * thisCount;
+				unMatch(pair, pairX);
+				count += multiplierX * thisCount;
 			}
 		}
 		return count;
 	}
 
 	/**
-	 * If adding (idA,idB) leaves the graph connectable, then (idA,idB) is legal.
+	 * If adding (pair, pairX) leaves the graph connectable, then (pair, pairX) is
+	 * legal.
 	 */
-	private boolean isLegalPair(final int idA, final int idB) {
-		final int[] pairA = idToPair(_cumSizes, idA);
-		final int kA0 = pairA[0];
-		final int kA1 = pairA[1];
-		final BitSet bitSetA = _bitSets[kA0];
-		final boolean aWasSet = bitSetA.get(kA1);
-		bitSetA.set(kA1);
-		final int[] pairB = idToPair(_cumSizes, idB);
-		final int kB0 = pairB[0];
-		final int kB1 = pairB[1];
-		final BitSet bitSetB = _bitSets[kB0];
-		final boolean bWasSet = bitSetB.get(kB1);
-		bitSetB.set(kB1);
+	private boolean isLegalPair(final int[] pair, final int[] pairX) {
+		final int k0 = pair[0], k1 = pair[1];
+		final BitSet bitSet = _bitSets[k0];
+		final boolean wasSet = bitSet.get(k1);
+		bitSet.set(k1);
+		final int k0X = pairX[0], k1X = pairX[1];
+		final BitSet bitSetX = _bitSets[k0X];
+		final boolean wasSetX = bitSetX.get(k1X);
+		bitSetX.set(k1X);
 		final boolean returnValue = isConnectable();
-		if (!aWasSet) {
-			bitSetA.clear(kA1);
+		if (!wasSet) {
+			bitSet.clear(k1);
 		}
-		if (!bWasSet) {
-			bitSetB.clear(kB1);
+		if (!wasSetX) {
+			bitSetX.clear(k1X);
 		}
 		return returnValue;
 	}
@@ -179,7 +181,7 @@ public class BlueGraph {
 		return isComplete;
 	}
 
-	/** idToPair and pairToId are static to make debugging simpler. */
+	/** idToPair is static to make debugging simpler. */
 	private static int[] idToPair(final int[] cumCounts, final int id) {
 		/**
 		 * <pre>
@@ -202,41 +204,37 @@ public class BlueGraph {
 		};
 	}
 
-	private static int pairToId(final int[] cumCounts, final int k0, final int k1) {
-		return (k0 == 0 ? 0 : cumCounts[k0 - 1]) + k1;
+	private void match(final int[] pair, final int[] pairX) {
+		matchOrUnMatch(pair, pairX, /* match= */true);
 	}
 
-	private void match(final int idA, final int idB) {
-		matchOrUnMatch(idA, idB, /* match= */true);
-	}
-
-	private void unMatch(final int idA, final int idB) {
-		matchOrUnMatch(idA, idB, /* match= */false);
+	private void unMatch(final int[] pair, final int[] pairX) {
+		matchOrUnMatch(pair, pairX, /* match= */false);
 	}
 
 	/** Factored out the common part of match and unMatch. */
-	private void matchOrUnMatch(final int idA, final int idB, final boolean match) {
-		final int[] pairA = idToPair(_cumSizes, idA);
-		final int k0A = pairA[0], k1A = pairA[1];
-		final BitSet bitSetA = _bitSets[k0A];
-		final int[] pairB = idToPair(_cumSizes, idB);
-		final int k0B = pairB[0], k1B = pairB[1];
-		final BitSet bitSetB = _bitSets[k0B];
-		bitSetA.set(k1A, match);
-		bitSetB.set(k1B, match);
+	private void matchOrUnMatch(final int[] pair, final int[] pairX, final boolean match) {
+		final int k0 = pair[0], k1 = pair[1];
+		final BitSet bitSet = _bitSets[k0];
+		final int k0X = pairX[0], k1X = pairX[1];
+		final BitSet bitSetX = _bitSets[k0X];
+		bitSet.set(k1, match);
+		bitSetX.set(k1X, match);
 	}
 
-	private int getSmallestUnMatchedId() {
+	private int[] getSmallestUnMatchedPair() {
 		final int nBlueComponents = _bitSets.length;
 		for (int k0 = 0; k0 < nBlueComponents; ++k0) {
 			final BitSet bitSet = _bitSets[k0];
 			final int k1 = bitSet.nextClearBit(0);
 			final int bitSetSize = getBitSetSize(k0);
 			if (k1 < bitSetSize) {
-				return pairToId(_cumSizes, k0, k1);
+				return new int[] {
+						k0, k1
+				};
 			}
 		}
-		return -1;
+		return null;
 	}
 
 	private int getBitSetSize(final int k0) {
@@ -244,7 +242,7 @@ public class BlueGraph {
 	}
 
 	/** Utility routine for creating a succinct string from a spec. */
-	static String specToString(final int[] spec) {
+	private static String specToString(final int[] spec) {
 		String s = String.format("[%d", spec[0]);
 		final int n = spec.length;
 		for (int k = 2; k < n; ++k) {
@@ -268,7 +266,7 @@ public class BlueGraph {
 	 * Utility routine for creating a spec from the string that is produced by
 	 * specToString.
 	 */
-	static int[] stringToSpec(final String specString) {
+	private static int[] stringToSpec(final String specString) {
 		final String[] fields = specString.trim().split("[\\s,\\[\\]]+");
 		final int nFields, fieldsArray[];
 		{
@@ -300,22 +298,82 @@ public class BlueGraph {
 		return spec;
 	}
 
+	private static void nextSpec(final int[] spec) {
+		/**
+		 * <pre>
+		 * spec[0] is the length of the path
+		 * spec[1] is the number of cycles of length 1 (which is always 0)
+		 * spec[2] is the number of cycles of length 2
+		 * ...
+		 * The longest possible cycle is nBlueEdges-2, so spec must
+		 * be allocated so that its highest index is nBlueEdgess-2 and
+		 * this is the way that the calling program indicates nBlueEdges.
+		 * Returns the next spec, or all 0s if there is none.
+		 * The update is done in place so that the output is the
+		 * same spec as the input.
+		 * If spec[0] == 0, then the calling program is telling us to
+		 * fill in the first spec.
+		 * </pre>
+		 */
+		final int nBlueEdges = spec.length + 1;
+		if (nBlueEdges < 3 || nBlueEdges % 2 == 0) {
+			return;
+		}
+		final int pathLength = spec[0];
+		if (pathLength == 0) {
+			/** We're just starting. Return a full path with no cycles. */
+			Arrays.fill(spec, 0);
+			spec[0] = nBlueEdges;
+			return;
+		}
+		final int nInCycles = nBlueEdges - pathLength;
+		for (int cum = 0, k = 2; k < nInCycles; ++k) {
+			cum += spec[k] * k;
+			if (cum == k + 1 || cum > k + 2) {
+				/** Can bump k+1. */
+				++spec[k + 1];
+				cum -= k + 1;
+				Arrays.fill(spec, 1, k + 1, 0);
+				if (cum % 2 == 1) {
+					++spec[3];
+					cum -= 3;
+				}
+				spec[2] = cum / 2;
+				return;
+			}
+		}
+		/** Must decrease pathLength. */
+		final int newPathLength = pathLength - (pathLength == nBlueEdges ? 2 : 1);
+		if (newPathLength < 2) {
+			Arrays.fill(spec, 0);
+			return;
+		}
+		Arrays.fill(spec, 0);
+		spec[0] = newPathLength;
+		int remaining = nBlueEdges - newPathLength;
+		if (remaining % 2 == 1) {
+			spec[3] = 1;
+			remaining -= 3;
+		}
+		spec[2] = remaining / 2;
+	}
+
 	/** The punchline. */
 	public static int feynman_F(final int n) {
 		final int nBlueEdges = n + 1;
-		final int[] blue = new int[nBlueEdges - 1];
-		Arrays.fill(blue, 0);
+		final int[] spec = new int[nBlueEdges - 1];
+		Arrays.fill(spec, 0);
 		System.out.printf("n[%d] (nBlueEdges[%d])", n, nBlueEdges);
 		for (int globalCount = 0;;) {
-			SpecIterator.nextSpec(blue);
-			if (blue[0] == 0) {
+			nextSpec(spec);
+			if (spec[0] == 0) {
 				return globalCount;
 			}
-			final BlueGraph blueGraph = new BlueGraph(blue);
+			final BlueGraph blueGraph = new BlueGraph(spec);
 			final int thisCount = blueGraph.recursiveGetCount(/* nRedEdgesPlaced= */0);
 			globalCount += thisCount;
 			System.out.printf("\n%s, count[%d], globalCount[%d]", //
-					specToString(blue), thisCount, globalCount);
+					specToString(spec), thisCount, globalCount);
 		}
 	}
 
@@ -333,6 +391,17 @@ public class BlueGraph {
 
 	/** Testing idToPair. */
 	public final static void main0(final String[] args) {
+		final int[] cumCounts = new int[] {
+				3, 7, 8
+		};
+		for (int id = 0; id < 10; ++id) {
+			final int[] x = idToPair(cumCounts, id);
+			System.out.printf("\n%d->[%d,%d]", id, x[0], x[1]);
+		}
+	}
+
+	/** Testing idToPair. */
+	public final static void main1(final String[] args) {
 		final int[] cumCounts = new int[] {
 				3, 7, 8
 		};
