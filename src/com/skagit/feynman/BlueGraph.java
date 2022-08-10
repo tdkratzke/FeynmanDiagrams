@@ -410,4 +410,22 @@ public class BlueGraph {
 			System.out.printf("\n%d->[%d,%d]", id, x[0], x[1]);
 		}
 	}
+
+	public static void main2(final String[] args) {
+		final int[] spec = BlueGraph.stringToSpec("[10 0,1]");
+		System.out.printf("\n%s", BlueGraph.specToString(spec));
+	}
+
+	public static void main3(final String[] args) {
+		final int nBlueEdges = 13;
+		final int[] spec = new int[nBlueEdges - 1];
+		Arrays.fill(spec, 0);
+		for (;;) {
+			nextSpec(spec);
+			if (spec[0] == 0) {
+				break;
+			}
+			System.out.printf("\n%s", BlueGraph.specToString(spec));
+		}
+	}
 }
