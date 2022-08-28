@@ -65,7 +65,7 @@ public class BlueGraph {
 		if (nRedEdgesPlaced == _nRedEdgesToPlace - 1) {
 			return 1;
 		}
-		final int[] pair = getNodeToMatch();
+		final int[] pair = getNodeToMatch(/* afterPair= */null);
 		final int k0 = pair[0], k1 = pair[1];
 
 		int count = 0;
@@ -117,16 +117,27 @@ public class BlueGraph {
 		return count;
 	}
 
-	private int[] getNodeToMatch() {
-		for (int k0 = _connectedToPathComponents.nextSetBit(0); k0 >= 0; k0 = _connectedToPathComponents
+	private int[] getNodeToMatch(final int[] afterPair) {
+		final int startK0, startK1;
+		if (afterPair == null) {
+			startK0 = startK1 = 0;
+		} else {
+			startK0 = afterPair[0];
+			startK1 = afterPair[1] + 1;
+		}
+		for (int k0 = _connectedToPathComponents.nextSetBit(startK0); k0 >= 0; k0 = _connectedToPathComponents
 				.nextSetBit(k0 + 1)) {
-			if (_matchedNodesS[k0].cardinality() == _sizes[k0]) {
+			final int size = _sizes[k0];
+			if (_matchedNodesS[k0].cardinality() == size) {
 				continue;
 			}
-			final int k1 = _matchedNodesS[k0].nextClearBit(0);
-			return new int[] {
-					k0, k1
-			};
+			final int startSearchAt = (k0 == startK0 ? startK1 : 0);
+			final int k1 = _matchedNodesS[k0].nextClearBit(startSearchAt);
+			if (k1 < size) {
+				return new int[] {
+						k0, k1
+				};
+			}
 		}
 		/** To keep the compiler happy. */
 		return null;
