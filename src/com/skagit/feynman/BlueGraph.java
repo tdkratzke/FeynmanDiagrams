@@ -132,10 +132,10 @@ public class BlueGraph {
 		return null;
 	}
 
-	private void match(final int[] pair1, final int[] pair2) {
+	private void match(final int[] pair, final int[] pairX) {
 		for (int iPass = 0; iPass < 2; ++iPass) {
-			final int[] pair = iPass == 0 ? pair1 : pair2;
-			final int k0 = pair[0], k1 = pair[1];
+			final int[] pairY = iPass == 0 ? pair : pairX;
+			final int k0 = pairY[0], k1 = pairY[1];
 			final BitSet matchedNodes = _matchedNodesS[k0];
 			matchedNodes.set(k1);
 			--_nUnmatchedInConnectedToPath;
@@ -148,10 +148,10 @@ public class BlueGraph {
 		}
 	}
 
-	private void unMatch(final int[] pair1, final int[] pair2) {
+	private void unMatch(final int[] pair, final int[] pairX) {
 		for (int iPass = 0; iPass < 2; ++iPass) {
-			final int[] pair = iPass == 0 ? pair1 : pair2;
-			final int k0 = pair[0], k1 = pair[1];
+			final int[] pairY = iPass == 0 ? pair : pairX;
+			final int k0 = pairY[0], k1 = pairY[1];
 			final BitSet matchedNodes = _matchedNodesS[k0];
 			matchedNodes.clear(k1);
 			++_nUnmatchedInConnectedToPath;
