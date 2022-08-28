@@ -66,39 +66,16 @@ public class BlueGraph {
 			return 1;
 		}
 		final int[] pair = getNodeToMatch(/* afterPair= */null);
-		final int k0 = pair[0], k1 = pair[1];
 
 		int count = 0;
 
 		/** Count ways to match pair into components that are connectedToPath. */
 		if (_nUnmatchedInConnectedToPath > 2) {
-			final boolean useNewTricks = true;
-			if (useNewTricks) {
-				final int[] pairX = getNodeToMatch(/* afterPair= */pair);
-				match(pair, pairX);
-				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
-				unMatch(pair, pairX);
-				count += (_nUnmatchedInConnectedToPath - 1) * thisCount;
-			} else {
-				for (int k0X = _connectedToPathComponents.nextSetBit(0); k0X >= 0; k0X = _connectedToPathComponents
-						.nextSetBit(k0X + 1)) {
-					final BitSet matchedNodes = _matchedNodesS[k0X];
-					final int size = _sizes[k0X];
-					final int cardinality = matchedNodes.cardinality();
-					if (size == cardinality) {
-						continue;
-					}
-					final int k1X = matchedNodes.nextClearBit(k0X == k0 ? (k1 + 1) : 0);
-					final int[] pairX = new int[] {
-							k0X, k1X
-					};
-					final int multiplier = size - cardinality - (k0 == k0X ? 1 : 0);
-					match(pair, pairX);
-					final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
-					unMatch(pair, pairX);
-					count += multiplier * thisCount;
-				}
-			}
+			final int[] pairX = getNodeToMatch(/* afterPair= */pair);
+			match(pair, pairX);
+			final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
+			unMatch(pair, pairX);
+			count += (_nUnmatchedInConnectedToPath - 1) * thisCount;
 		}
 
 		/** Count ways to match pair into components that are not connectedToPath. */
