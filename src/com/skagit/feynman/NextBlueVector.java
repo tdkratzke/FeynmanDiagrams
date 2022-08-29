@@ -11,7 +11,7 @@ public class NextBlueVector {
 		 * blueVector[1] is the number of cycles of length 2
 		 * blueVector[2] is the number of cycles of length 3
 		 * ...
-		 * Might return within blueVector, so it can alter blueVector.
+		 * Alters blueVector.
 		 * </pre>
 		 */
 		final int pathLength = blueVector[0];
@@ -46,7 +46,7 @@ public class NextBlueVector {
 				if (cycleLengthToBump > maxCycleLength) {
 					newBlueVector = new int[cycleLengthToBump];
 					Arrays.fill(newBlueVector, 0);
-					newBlueVector[0] = blueVector[0];
+					newBlueVector[0] = pathLength;
 				} else {
 					newBlueVector = blueVector;
 					Arrays.fill(newBlueVector, 1, cycleLengthToBump - 1, 0);
