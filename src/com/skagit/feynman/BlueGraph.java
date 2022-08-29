@@ -4,6 +4,7 @@ import java.util.BitSet;
 
 public class BlueGraph {
 	final private int[] _blueVector;
+	final int _modValue;
 	final private BitSet[] _matchedNodesS;
 	final private int[] _sizes;
 	final private int _maxCycleSize;
@@ -12,17 +13,14 @@ public class BlueGraph {
 	private int _nUnmatchedInConnectedToPath;
 
 	public BlueGraph(final int[] blueVector) {
+		this(blueVector, -1);
+	}
+
+	public BlueGraph(final int[] blueVector, final int modValue) {
 		_blueVector = blueVector;
+		_modValue = modValue;
 		final int blueVectorLength = _blueVector.length;
 		final int nInPath = _blueVector[0];
-
-		/**
-		 * <pre>
-		 * k indexes _blueVector.
-		 * k0 indexes components.
-		 * k1 indexes nodes within a component.
-		 * </pre>
-		 */
 
 		/** Compute nBlueComponents, _maxCycleSize, and _nRedEdgesToPlace. */
 		final int nBlueComponents;
@@ -30,12 +28,13 @@ public class BlueGraph {
 			int nBlueComponentsX = 1;
 			int maxCycleSize = 0;
 			int nNodesOfInterest = _blueVector[0] - 1;
-			for (int k = 2; k < blueVectorLength; ++k) {
+			for (int k = 1; k < blueVectorLength; ++k) {
 				final int nSimilar = _blueVector[k];
 				if (nSimilar > 0) {
-					nNodesOfInterest += nSimilar * k;
+					final int cycleLength = k + 1;
+					nNodesOfInterest += nSimilar * cycleLength;
 					nBlueComponentsX += nSimilar;
-					maxCycleSize = k;
+					maxCycleSize = cycleLength;
 				}
 			}
 			nBlueComponents = nBlueComponentsX;
@@ -47,7 +46,7 @@ public class BlueGraph {
 		_matchedNodesS = new BitSet[nBlueComponents];
 		_sizes = new int[nBlueComponents];
 		for (int k = 0, k0 = 0; k < blueVectorLength; ++k) {
-			final int nMatchable = k == 0 ? (nInPath - 1) : k;
+			final int nMatchable = k == 0 ? (nInPath - 1) : (k + 1);
 			final int nSimilar = k == 0 ? 1 : _blueVector[k];
 			for (int kSimilar = 0; kSimilar < nSimilar; ++kSimilar, ++k0) {
 				_matchedNodesS[k0] = new BitSet(nMatchable);
@@ -61,21 +60,21 @@ public class BlueGraph {
 	}
 
 	/** The real hammer; count ways to complete the red edges. */
-	private int recursiveGetCount(final int nRedEdgesPlaced) {
+	private long recursiveGetCount(final int nRedEdgesPlaced) {
 		if (nRedEdgesPlaced == _nRedEdgesToPlace - 1) {
-			return 1;
+			return 1L;
 		}
 		final int[] pair = getNodeToMatch(/* afterPair= */null);
 
-		int count = 0;
+		long count = 0L;
 
 		/** Count ways to match pair into components that are connectedToPath. */
 		if (_nUnmatchedInConnectedToPath > 2) {
 			final int[] pairX = getNodeToMatch(/* afterPair= */pair);
 			match(pair, pairX);
-			final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
+			final long thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
 			unMatch(pair, pairX);
-			count += (_nUnmatchedInConnectedToPath - 1) * thisCount;
+			count = accumulate(count, (_nUnmatchedInConnectedToPath - 1), thisCount);
 		}
 
 		/** Count ways to match pair into components that are not connectedToPath. */
@@ -90,12 +89,21 @@ public class BlueGraph {
 						k0X, 0
 				};
 				match(pair, pairX);
-				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
+				final long thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
 				unMatch(pair, pairX);
-				count += thisCount;
+				count = accumulate(count, 1, thisCount);
 			}
 		}
 		return count;
+	}
+
+	private long accumulate(final long count, final int multiplier, final long newCount) {
+		if (_modValue <= 1) {
+			return count + multiplier * newCount;
+		}
+		final long a = count % _modValue;
+		final long b = ((multiplier % _modValue) * (newCount % _modValue)) % _modValue;
+		return (a + b) % _modValue;
 	}
 
 	private int[] getNodeToMatch(final int[] afterPair) {
@@ -162,7 +170,7 @@ public class BlueGraph {
 		}
 	}
 
-	int getCount() {
+	public long getCount() {
 		return recursiveGetCount(0);
 	}
 

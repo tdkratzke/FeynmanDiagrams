@@ -1,7 +1,6 @@
 package com.skagit.feynman;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * <pre>
@@ -15,7 +14,7 @@ public class Feynman_F {
 	static String blueVectorToString(final int[] blueVector) {
 		String s = String.format("[%d", blueVector[0]);
 		final int n = blueVector.length;
-		for (int k = 2; k < n; ++k) {
+		for (int k = 1; k < n; ++k) {
 			boolean gotOne = false;
 			for (int kk = k; kk < n; ++kk) {
 				if (blueVector[kk] != 0) {
@@ -26,62 +25,65 @@ public class Feynman_F {
 			if (!gotOne) {
 				break;
 			}
-			s += String.format("%s%d", k == 2 ? " " : ",", blueVector[k]);
+			s += String.format("%s%d", k == 1 ? " " : ",", blueVector[k]);
 		}
 		s += "]";
 		return s;
 	}
 
 	/** Creates a blue vector from a succinct string. */
-	static int[] stringToBlueVector(final String blueVectorString) {
-		final String[] fields = blueVectorString.trim().split("[\\s,\\[\\]]+");
-		final int nFields, fieldsArray[];
-		{
-			final int nFieldsX = fields.length;
-			final ArrayList<Integer> fieldsList = new ArrayList<>();
-			for (int k = 0; k < nFieldsX; ++k) {
-				try {
-					fieldsList.add(Integer.parseInt(fields[k]));
-				} catch (final NumberFormatException e) {
-				}
-			}
-			nFields = fieldsList.size();
-			if (nFields < 1) {
-				return null;
-			}
-			fieldsArray = new int[nFields];
-			for (int k = 0; k < nFields; ++k) {
-				fieldsArray[k] = fieldsList.get(k);
+	static int[] stringToBlueVector(final String s) {
+		final String[] fields = s.trim().split("[\\s,\\[\\]]+");
+		final int nFieldsX = fields.length;
+		final ArrayList<Integer> fieldsList = new ArrayList<>();
+		for (int k = 0; k < nFieldsX; ++k) {
+			try {
+				fieldsList.add(Integer.parseInt(fields[k]));
+			} catch (final NumberFormatException e) {
 			}
 		}
-		int nBlueArcs = fieldsArray[0];
+		final int nFields = fieldsList.size();
+		if (nFields < 1) {
+			return null;
+		}
+		int maxCycleLength = 0;
 		for (int k = 1; k < nFields; ++k) {
-			nBlueArcs += (k + 1) * fieldsArray[k];
+			final int nCycles = fieldsList.get(k);
+			if (nCycles > 0) {
+				final int cycleLength = k + 1;
+				maxCycleLength = cycleLength;
+			}
 		}
-		final int[] blueVector = new int[nBlueArcs - 1];
-		Arrays.fill(blueVector, 0);
-		blueVector[0] = fieldsArray[0];
-		System.arraycopy(fieldsArray, 1, blueVector, 2, nFields - 1);
+		if (maxCycleLength == 0) {
+			return new int[] {
+					fieldsList.get(0)
+			};
+		}
+		final int[] blueVector = new int[maxCycleLength];
+		for (int k = 0; k < maxCycleLength; ++k) {
+			blueVector[k] = fieldsList.get(k);
+		}
 		return blueVector;
 	}
 
 	/** The main routine and the testing main. */
-	public static int feynman_F(final int n) {
+	public static long feynman_F(final int n, final int modValue, final boolean dumpResults) {
 		final int nBlueArcs = n + 1;
-		final int[] blueVector = new int[nBlueArcs - 1];
-		Arrays.fill(blueVector, 0);
+		int[] blueVector = new int[] {
+				nBlueArcs
+		};
 		System.out.printf("n[%d] (nBlueArcs[%d])", n, nBlueArcs);
-		for (int runningTotal = 0;;) {
-			NextBlueVector.nextBlueVector(blueVector);
-			if (blueVector[0] == 0) {
-				return runningTotal;
-			}
-			final BlueGraph blueGraph = new BlueGraph(blueVector);
-			final int thisCount = blueGraph.getCount();
+		long runningTotal = 0L;
+		for (; blueVector != null; blueVector = NextBlueVector.nextBlueVector(blueVector)) {
+			final BlueGraph blueGraph = new BlueGraph(blueVector, modValue);
+			final long thisCount = blueGraph.getCount();
 			runningTotal += thisCount;
-			System.out.printf("\n%s, ThisCount[%d], RunningTotal[%d]", //
-					blueVectorToString(blueVector), thisCount, runningTotal);
+			if (dumpResults) {
+				System.out.printf("\n%s, ThisCount[%d], RunningTotal[%d]", //
+						blueVectorToString(blueVector), thisCount, runningTotal);
+			}
 		}
+		return runningTotal;
 	}
 
 	public final static void main(final String[] args) {
@@ -89,36 +91,16 @@ public class Feynman_F {
 		if (doSingleBlueVector) {
 			final int[] blueVectorString = stringToBlueVector("[2 1,1]");
 			final BlueGraph blueGraph = new BlueGraph(blueVectorString);
-			final int count = blueGraph.getCount();
+			final long count = blueGraph.getCount();
 			System.out.printf("\ncount[%d] for %s", count, blueVectorToString(blueVectorString));
 		} else {
-			for (int n = 4; n <= 8; n += 2) {
-				feynman_F(n);
-				if (n < 8) {
-					System.out.printf("\n\n");
-				}
+			for (int n = 20; n <= 40; n += 4) {
+				final long feynmanN = feynman_F(n, /* modValue= */1000000007, /* dumpResults= */false);
+				System.out.printf("\nn[%d] feynmanN[%d]", n, feynmanN);
+				System.out.printf("\n\n");
 			}
 		}
 	}
-
-	public static void main1(final String[] args) {
-		final int[] blueVector = stringToBlueVector("[10 0,1]");
-		System.out.printf("\n%s", blueVectorToString(blueVector));
-	}
-
-	public static void main2(final String[] args) {
-		final int nBlueEdges = 13;
-		final int[] blueVector = new int[nBlueEdges - 1];
-		Arrays.fill(blueVector, 0);
-		for (;;) {
-			NextBlueVector.nextBlueVector(blueVector);
-			if (blueVector[0] == 0) {
-				break;
-			}
-			System.out.printf("\n%s", blueVectorToString(blueVector));
-		}
-	}
-
 }
 
 /**
