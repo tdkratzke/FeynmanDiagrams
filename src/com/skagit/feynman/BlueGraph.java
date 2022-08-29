@@ -37,6 +37,14 @@ public class BlueGraph {
 					maxCycleSize = cycleLength;
 				}
 			}
+			if (nNodesOfInterest % 2 == 1) {
+				_matchedNodesS = null;
+				_sizes = null;
+				_maxCycleSize = -1;
+				_nRedEdgesToPlace = -1;
+				_connectedToPathComponents = null;
+				return;
+			}
 			nBlueComponents = nBlueComponentsX;
 			_maxCycleSize = maxCycleSize;
 			_nRedEdgesToPlace = nNodesOfInterest / 2;
@@ -60,21 +68,24 @@ public class BlueGraph {
 	}
 
 	/** The real hammer; count ways to complete the red edges. */
-	private long recursiveGetCount(final int nRedEdgesPlaced) {
+	private int recursiveGetCount(final int nRedEdgesPlaced) {
+		if (_matchedNodesS == null) {
+			return 0;
+		}
 		if (nRedEdgesPlaced == _nRedEdgesToPlace - 1) {
-			return 1L;
+			return 1;
 		}
 		final int[] pair = getNodeToMatch(/* afterPair= */null);
 
-		long count = 0L;
+		int count = 0;
 
 		/** Count ways to match pair into components that are connectedToPath. */
 		if (_nUnmatchedInConnectedToPath > 2) {
 			final int[] pairX = getNodeToMatch(/* afterPair= */pair);
 			match(pair, pairX);
-			final long thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
+			final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
 			unMatch(pair, pairX);
-			count = accumulate(count, (_nUnmatchedInConnectedToPath - 1), thisCount);
+			count = FeynmanF.accumulate(count, (_nUnmatchedInConnectedToPath - 1), thisCount, _modValue);
 		}
 
 		/** Count ways to match pair into components that are not connectedToPath. */
@@ -89,21 +100,12 @@ public class BlueGraph {
 						k0X, 0
 				};
 				match(pair, pairX);
-				final long thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
+				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
 				unMatch(pair, pairX);
-				count = accumulate(count, 1, thisCount);
+				count = FeynmanF.accumulate(count, 1, thisCount, _modValue);
 			}
 		}
 		return count;
-	}
-
-	private long accumulate(final long count, final int multiplier, final long newCount) {
-		if (_modValue <= 1) {
-			return count + multiplier * newCount;
-		}
-		final long a = count % _modValue;
-		final long b = ((multiplier % _modValue) * (newCount % _modValue)) % _modValue;
-		return (a + b) % _modValue;
 	}
 
 	private int[] getNodeToMatch(final int[] afterPair) {
@@ -170,7 +172,7 @@ public class BlueGraph {
 		}
 	}
 
-	public long getCount() {
+	public int getCount() {
 		return recursiveGetCount(0);
 	}
 

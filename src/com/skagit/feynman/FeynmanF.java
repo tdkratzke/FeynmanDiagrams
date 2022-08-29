@@ -5,33 +5,21 @@ import java.util.ArrayList;
 /**
  * <pre>
  * This class has statics, most of which are utilitarian.
- * The main static routine is feynman_F(n) and its testing main.
+ * The main static routine is feynmanF(n) and its testing main.
  * </pre>
  */
-public class Feynman_F {
+public class FeynmanF {
 
-	/** Creates a succinct string from a blue vector. */
 	static String blueVectorToString(final int[] blueVector) {
 		String s = String.format("[%d", blueVector[0]);
 		final int n = blueVector.length;
 		for (int k = 1; k < n; ++k) {
-			boolean gotOne = false;
-			for (int kk = k; kk < n; ++kk) {
-				if (blueVector[kk] != 0) {
-					gotOne = true;
-					break;
-				}
-			}
-			if (!gotOne) {
-				break;
-			}
 			s += String.format("%s%d", k == 1 ? " " : ",", blueVector[k]);
 		}
 		s += "]";
 		return s;
 	}
 
-	/** Creates a blue vector from a succinct string. */
 	static int[] stringToBlueVector(final String s) {
 		final String[] fields = s.trim().split("[\\s,\\[\\]]+");
 		final int nFieldsX = fields.length;
@@ -43,41 +31,44 @@ public class Feynman_F {
 			}
 		}
 		final int nFields = fieldsList.size();
-		if (nFields < 1) {
+		if (nFields < 1 || fieldsList.get(0) < 2) {
 			return null;
 		}
-		int maxCycleLength = 0;
-		for (int k = 1; k < nFields; ++k) {
-			final int nCycles = fieldsList.get(k);
-			if (nCycles > 0) {
-				final int cycleLength = k + 1;
-				maxCycleLength = cycleLength;
+		int maxNonZeroField = 0;
+		for (int k = 0; k < nFields; ++k) {
+			final int field = fieldsList.get(k);
+			if (field > 0) {
+				maxNonZeroField = k;
 			}
 		}
-		if (maxCycleLength == 0) {
-			return new int[] {
-					fieldsList.get(0)
-			};
-		}
-		final int[] blueVector = new int[maxCycleLength];
-		for (int k = 0; k < maxCycleLength; ++k) {
+		final int[] blueVector = new int[maxNonZeroField + 1];
+		for (int k = 0; k <= maxNonZeroField; ++k) {
 			blueVector[k] = fieldsList.get(k);
 		}
 		return blueVector;
 	}
 
+	static int accumulate(final int count, final int multiplier, final int newCount, final int modValue) {
+		if (modValue <= 1) {
+			return count + multiplier * newCount;
+		}
+		final int a = count % modValue;
+		final int b = ((multiplier % modValue) * (newCount % modValue)) % modValue;
+		return (a + b) % modValue;
+	}
+
 	/** The main routine and the testing main. */
-	public static long feynman_F(final int n, final int modValue, final boolean dumpResults) {
+	public static int feynmanF(final int n, final int modValue, final boolean dumpResults) {
 		final int nBlueArcs = n + 1;
 		int[] blueVector = new int[] {
 				nBlueArcs
 		};
 		System.out.printf("n[%d] (nBlueArcs[%d])", n, nBlueArcs);
-		long runningTotal = 0L;
+		int runningTotal = 0;
 		for (; blueVector != null; blueVector = NextBlueVector.nextBlueVector(blueVector)) {
 			final BlueGraph blueGraph = new BlueGraph(blueVector, modValue);
-			final long thisCount = blueGraph.getCount();
-			runningTotal += thisCount;
+			final int thisCount = blueGraph.getCount();
+			runningTotal = accumulate(runningTotal, 1, thisCount, modValue);
 			if (dumpResults) {
 				System.out.printf("\n%s, ThisCount[%d], RunningTotal[%d]", //
 						blueVectorToString(blueVector), thisCount, runningTotal);
@@ -89,14 +80,14 @@ public class Feynman_F {
 	public final static void main(final String[] args) {
 		final boolean doSingleBlueVector = false;
 		if (doSingleBlueVector) {
-			final int[] blueVectorString = stringToBlueVector("[2 1,1]");
-			final BlueGraph blueGraph = new BlueGraph(blueVectorString);
-			final long count = blueGraph.getCount();
-			System.out.printf("\ncount[%d] for %s", count, blueVectorToString(blueVectorString));
+			final int[] blueVector = stringToBlueVector("[2 1]");
+			final BlueGraph blueGraph = new BlueGraph(blueVector);
+			final int count = blueGraph.getCount();
+			System.out.printf("\ncount[%d] for %s", count, blueVectorToString(blueVector));
 		} else {
-			for (int n = 20; n <= 40; n += 4) {
-				final long feynmanN = feynman_F(n, /* modValue= */1000000007, /* dumpResults= */false);
-				System.out.printf("\nn[%d] feynmanN[%d]", n, feynmanN);
+			for (int n = 4; n <= 8; n += 2) {
+				final int feynmanN = feynmanF(n, /* modValue= */1000000007, /* dumpResults= */true);
+				System.out.printf("\nfeynmanN[%d]", feynmanN);
 				System.out.printf("\n\n");
 			}
 		}

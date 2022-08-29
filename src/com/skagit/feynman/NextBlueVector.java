@@ -89,7 +89,7 @@ public class NextBlueVector {
 				nBlueArcs
 		};
 		for (; blueVector != null; blueVector = NextBlueVector.nextBlueVector(blueVector)) {
-			System.out.printf("\n%s", Feynman_F.blueVectorToString(blueVector));
+			System.out.printf("\n%s", FeynmanF.blueVectorToString(blueVector));
 		}
 	}
 
