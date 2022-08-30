@@ -31,16 +31,20 @@ public class NextBlueVector {
 		for (int cum = 0, cycleLength = 2; cycleLength <= maxCycleLength; ++cycleLength) {
 			cum += blueVector[cycleLength - 1] * cycleLength;
 			if (cum >= cycleLength + 1) {
-				/** We have enough to bump that's 1 or 2 bigger. */
-				final int cycleLengthToBump = cycleLength + (cum == (cycleLength + 2) ? 2 : 1);
 				/**
-				 * If we want to bump cycleLength + 2, we need to account for cycles of length
-				 * cycleLength + 1.
+				 * We have enough to bump cycleLength + 1. If cum is exactly cycleLength + 2, we
+				 * cannot bump cycleLength + 1 or else we'd have an unusable leftover arc. But
+				 * in that case, we can and will bump cycleLength + 2. If we bump cycleLength +
+				 * 2, we have to add in any cycles of length cycleLength + 1.
 				 */
-				if (cycleLengthToBump == cycleLength + 2) {
+				final int cycleLengthToBump;
+				if (cum == cycleLength + 2) {
+					cycleLengthToBump = cycleLength + 2;
 					if (maxCycleLength >= cycleLength + 1) {
 						cum += blueVector[cycleLength] * (cycleLength + 1);
 					}
+				} else {
+					cycleLengthToBump = cycleLength + 1;
 				}
 				final int[] newBlueVector;
 				if (cycleLengthToBump > maxCycleLength) {
@@ -62,29 +66,24 @@ public class NextBlueVector {
 			}
 		}
 
-		/** Must decrease pathLength. */
+		/** Must decrease pathLength and then use 2-cycles and possibly one 3-cycle. */
 		final int newPathLength = pathLength - (nInCycles == 0 ? 2 : 1);
 		if (newPathLength < 2) {
 			return null;
 		}
-		int nRemaining = nBlueArcs - newPathLength;
-		final int[] newBlueVector;
+		final int nRemaining = nBlueArcs - newPathLength;
 		if (nRemaining % 2 == 1) {
-			newBlueVector = new int[] {
-					newPathLength, 0, 1
-			};
-			nRemaining -= 3;
-		} else {
-			newBlueVector = new int[] {
-					newPathLength, 0
+			return new int[] {
+					newPathLength, (nRemaining - 3) / 2, 1
 			};
 		}
-		newBlueVector[1] = nRemaining / 2;
-		return newBlueVector;
+		return new int[] {
+				newPathLength, nRemaining / 2
+		};
 	}
 
 	public static void main(final String[] args) {
-		final int nBlueArcs = 21;
+		final int nBlueArcs = 9;
 		int[] blueVector = new int[] {
 				nBlueArcs
 		};
