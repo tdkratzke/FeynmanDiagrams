@@ -11,7 +11,7 @@ public class NextBlueVector {
 		 * blueVector[1] is the number of cycles of length 2
 		 * blueVector[2] is the number of cycles of length 3
 		 * ...
-		 * Alters blueVector.
+		 * Leaves blueVector alone and always allocates its return value.
 		 * </pre>
 		 */
 		final int pathLength = blueVector[0];
@@ -26,33 +26,31 @@ public class NextBlueVector {
 			}
 		}
 
-		/** Figure out which cycleLength to bump. */
+		/**
+		 * Figure out which cycleLength to bump. In the following loop, we will bump
+		 * cycleLength + 1 if we bump anything at all. Because we might want to bump
+		 * maxCycleLength + 2, we have to allow cycleLength to go all the way up to
+		 * maxCycleLength + 1.
+		 */
 		final int nBlueArcs = pathLength + nInCycles;
-		for (int cum = 0, cycleLength = 2; cycleLength <= maxCycleLength; ++cycleLength) {
-			cum += blueVector[cycleLength - 1] * cycleLength;
-			if (cum >= cycleLength + 1) {
-				/**
-				 * We have enough to bump cycleLength + 1. If cum is exactly cycleLength + 2, we
-				 * cannot bump cycleLength + 1 or else we'd have an unusable leftover arc. But
-				 * in that case, we can and will bump cycleLength + 2. If we bump cycleLength +
-				 * 2, we have to add in any cycles of length cycleLength + 1.
-				 */
-				final int cycleLengthToBump;
-				if (cum == cycleLength + 2) {
-					cycleLengthToBump = cycleLength + 2;
-					if (maxCycleLength >= cycleLength + 1) {
-						cum += blueVector[cycleLength] * (cycleLength + 1);
-					}
-				} else {
-					cycleLengthToBump = cycleLength + 1;
-				}
+		for (int cum = 0, cycleLength = 2; cycleLength <= maxCycleLength + 1; ++cycleLength) {
+			if (cycleLength <= maxCycleLength) {
+				cum += blueVector[cycleLength - 1] * cycleLength;
+			}
+			/**
+			 * If there are cycleLength + 1, or at least two to spare, we can bump
+			 * cycleLength + 1.
+			 */
+			if (cum == cycleLength + 1 || cum >= cycleLength + 3) {
+				final int cycleLengthToBump = cycleLength + 1;
+				/** We might have to allocate a new BlueVector. Otherwise, re-use the input. */
 				final int[] newBlueVector;
 				if (cycleLengthToBump > maxCycleLength) {
 					newBlueVector = new int[cycleLengthToBump];
 					Arrays.fill(newBlueVector, 0);
 					newBlueVector[0] = pathLength;
 				} else {
-					newBlueVector = blueVector;
+					newBlueVector = blueVector.clone();
 					Arrays.fill(newBlueVector, 1, cycleLengthToBump - 1, 0);
 				}
 				++newBlueVector[cycleLengthToBump - 1];
@@ -66,9 +64,13 @@ public class NextBlueVector {
 			}
 		}
 
-		/** Must decrease pathLength and then use 2-cycles and possibly one 3-cycle. */
+		/**
+		 * Could not bump a cycleLength. Decrease pathLength and then use 2-cycles and
+		 * possibly one 3-cycle.
+		 */
 		final int newPathLength = pathLength - (nInCycles == 0 ? 2 : 1);
 		if (newPathLength < 2) {
+			/** No newBlueVector. */
 			return null;
 		}
 		final int nRemaining = nBlueArcs - newPathLength;
@@ -83,12 +85,18 @@ public class NextBlueVector {
 	}
 
 	public static void main(final String[] args) {
-		final int nBlueArcs = 9;
-		int[] blueVector = new int[] {
-				nBlueArcs
-		};
-		for (; blueVector != null; blueVector = NextBlueVector.nextBlueVector(blueVector)) {
-			System.out.printf("\n%s", FeynmanF.blueVectorToString(blueVector));
+		if (false) {
+			final int[] blueVector = FeynmanF.stringToBlueVector("[5 2]");
+			System.out.printf("\n%s", FeynmanF.blueVectorToString(nextBlueVector(blueVector)));
+			System.exit(33);
+		} else {
+			final int nBlueArcs = 9;
+			int[] blueVector = new int[] {
+					nBlueArcs
+			};
+			for (; blueVector != null; blueVector = nextBlueVector(blueVector)) {
+				System.out.printf("\n%s", FeynmanF.blueVectorToString(blueVector));
+			}
 		}
 	}
 

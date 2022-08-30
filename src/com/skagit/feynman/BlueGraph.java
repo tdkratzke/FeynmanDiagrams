@@ -68,7 +68,7 @@ public class BlueGraph {
 	}
 
 	/** The real hammer; count ways to complete the red edges. */
-	private int recursiveGetCount(final int nRedEdgesPlaced) {
+	private int recursiveGetNRedCompletions(final int nRedEdgesPlaced) {
 		if (_matchedNodesS == null) {
 			return 0;
 		}
@@ -77,15 +77,15 @@ public class BlueGraph {
 		}
 		final int[] pair = getNodeToMatch(/* afterPair= */null);
 
-		int count = 0;
+		int nRedCompletions = 0;
 
 		/** Count ways to match pair into components that are connectedToPath. */
 		if (_nUnmatchedInConnectedToPath > 2) {
 			final int[] pairX = getNodeToMatch(/* afterPair= */pair);
 			match(pair, pairX);
-			final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
+			final int thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 			unMatch(pair, pairX);
-			count = FeynmanF.accumulate(count, (_nUnmatchedInConnectedToPath - 1), thisCount, _modValue);
+			nRedCompletions = FeynmanF.accumulate(nRedCompletions, (_nUnmatchedInConnectedToPath - 1), thisNRedCompletions, _modValue);
 		}
 
 		/** Count ways to match pair into components that are not connectedToPath. */
@@ -100,12 +100,12 @@ public class BlueGraph {
 						k0X, 0
 				};
 				match(pair, pairX);
-				final int thisCount = recursiveGetCount(nRedEdgesPlaced + 1);
+				final int thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 				unMatch(pair, pairX);
-				count = FeynmanF.accumulate(count, 1, thisCount, _modValue);
+				nRedCompletions = FeynmanF.accumulate(nRedCompletions, 1, thisNRedCompletions, _modValue);
 			}
 		}
-		return count;
+		return nRedCompletions;
 	}
 
 	private int[] getNodeToMatch(final int[] afterPair) {
@@ -172,8 +172,8 @@ public class BlueGraph {
 		}
 	}
 
-	public int getCount() {
-		return recursiveGetCount(0);
+	public int getNRedCompletions() {
+		return recursiveGetNRedCompletions(0);
 	}
 
 }

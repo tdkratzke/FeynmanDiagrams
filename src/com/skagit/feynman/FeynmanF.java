@@ -1,14 +1,61 @@
 package com.skagit.feynman;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
-/**
- * <pre>
- * This class has statics, most of which are utilitarian.
- * The main static routine is feynmanF(n) and its testing main.
- * </pre>
- */
 public class FeynmanF {
+	final public int _nBlueArcs;
+	final public int _modValue;
+	final public boolean _trackBlueVectorSets;
+	final public boolean _dumpResults;
+	public int _feynmanF;
+	final public TreeMap<Integer, BlueVectorSet> _blueVectorSets;
+
+	FeynmanF(final int n, final int modValue, final boolean trackBlueVectorSets, final boolean dumpResults) {
+		_nBlueArcs = n + 1;
+		_modValue = modValue;
+		_trackBlueVectorSets = trackBlueVectorSets;
+		_dumpResults = dumpResults;
+		_feynmanF = 0;
+		_blueVectorSets = new TreeMap<>();
+	}
+
+	public void addBlueVector(final int nRedCompletions, final int[] blueVector) {
+		if (_trackBlueVectorSets) {
+			BlueVectorSet blueVectorSet = _blueVectorSets.get(nRedCompletions);
+			if (blueVectorSet == null) {
+				blueVectorSet = new BlueVectorSet(nRedCompletions);
+				_blueVectorSets.put(nRedCompletions, blueVectorSet);
+			}
+			blueVectorSet.addBlueVector(blueVector);
+		}
+	}
+
+	public String getString() {
+		String s = String.format("\nFeynmanF[%d]", _feynmanF);
+		if (_modValue >= 2) {
+			s += String.format(" (modValue[%d])", _modValue);
+		}
+		if (_trackBlueVectorSets) {
+			final int nBlueVectorSets = _blueVectorSets.size();
+			final Iterator<Map.Entry<Integer, BlueVectorSet>> it = //
+					_blueVectorSets.entrySet().iterator();
+			for (int k = 0; it.hasNext(); ++k) {
+				final Map.Entry<Integer, BlueVectorSet> entry = it.next();
+				final BlueVectorSet blueVectorSet = entry.getValue();
+				s += String.format("\n  %d of %d Sets, %s", //
+						k + 1, nBlueVectorSets, blueVectorSet.getString());
+			}
+		}
+		return s;
+	}
+
+	@Override
+	public String toString() {
+		return getString();
+	}
 
 	static String blueVectorToString(final int[] blueVector) {
 		String s = String.format("[%d", blueVector[0]);
@@ -48,33 +95,46 @@ public class FeynmanF {
 		return blueVector;
 	}
 
-	static int accumulate(final int count, final int multiplier, final int newCount, final int modValue) {
+	/** Computes a + b*c. */
+	static int accumulate(int a, int b, int c, final int modValue) {
 		if (modValue <= 1) {
-			return count + multiplier * newCount;
+			return a + b * c;
 		}
-		final int a = count % modValue;
-		final int b = ((multiplier % modValue) * (newCount % modValue)) % modValue;
-		return (a + b) % modValue;
+		a %= modValue;
+		b %= modValue;
+		c %= modValue;
+		final int answer = a + (((b % modValue) * (c % modValue)) % modValue);
+		return answer % modValue;
 	}
 
-	/** The main routine and the testing main. */
-	public static int feynmanF(final int n, final int modValue, final boolean dumpResults) {
-		final int nBlueArcs = n + 1;
+	public static int feynmanF(final int n) {
+		final FeynmanF feynmanF = new FeynmanF( //
+				n, /* modValue= */1000000007, //
+				/* trackBlueVectorSets= */false, /* dumpResults= */false);
+		feynmanF.compute();
+		return feynmanF._feynmanF;
+	}
+
+	public void compute() {
+		final int n = _nBlueArcs - 1;
 		int[] blueVector = new int[] {
-				nBlueArcs
+				_nBlueArcs
 		};
-		System.out.printf("n[%d] (nBlueArcs[%d])", n, nBlueArcs);
-		int runningTotal = 0;
+		if (_dumpResults) {
+			System.out.printf("n[%d] (nBlueArcs[%d])", n, _nBlueArcs);
+		}
 		for (; blueVector != null; blueVector = NextBlueVector.nextBlueVector(blueVector)) {
-			final BlueGraph blueGraph = new BlueGraph(blueVector, modValue);
-			final int thisCount = blueGraph.getCount();
-			runningTotal = accumulate(runningTotal, 1, thisCount, modValue);
-			if (dumpResults) {
-				System.out.printf("\n%s, ThisCount[%d], RunningTotal[%d]", //
-						blueVectorToString(blueVector), thisCount, runningTotal);
+			final BlueGraph blueGraph = new BlueGraph(blueVector, _modValue);
+			final int nRedCompletions = blueGraph.getNRedCompletions();
+			if (_trackBlueVectorSets) {
+				addBlueVector(nRedCompletions, blueVector);
+			}
+			_feynmanF = accumulate(_feynmanF, 1, nRedCompletions, _modValue);
+			if (_dumpResults) {
+				System.out.printf("\n%s, NRedCompletions[%d], RunningTotal[%d]", //
+						blueVectorToString(blueVector), nRedCompletions, _feynmanF);
 			}
 		}
-		return runningTotal;
 	}
 
 	public final static void main(final String[] args) {
@@ -82,49 +142,24 @@ public class FeynmanF {
 		if (doSingleBlueVector) {
 			final int[] blueVector = stringToBlueVector("[2 1]");
 			final BlueGraph blueGraph = new BlueGraph(blueVector);
-			final int count = blueGraph.getCount();
-			System.out.printf("\ncount[%d] for %s", count, blueVectorToString(blueVector));
+			final int nRedCompletions = blueGraph.getNRedCompletions();
+			System.out.printf("\nNRedCompletions[%d] for %s", nRedCompletions, blueVectorToString(blueVector));
 		} else {
-			for (int n = 4; n <= 8; n += 2) {
-				final int feynmanN = feynmanF(n, /* modValue= */1000000007, /* dumpResults= */true);
-				System.out.printf("\nfeynmanN[%d]", feynmanN);
+			final int modValue = 1000000007;
+			final boolean trackBlueVectorSets = true;
+			final boolean dumpResults = true;
+			final int loN = 4, hiN = 8, inc = 2;
+			for (int n = loN; n <= hiN; n += inc) {
+				if (false) {
+					System.out.printf("\nn[%d] feynmanF[%d]", n, feynmanF(n));
+					continue;
+				}
+				final FeynmanF feynmanF = new FeynmanF( //
+						n, modValue, trackBlueVectorSets, dumpResults);
+				feynmanF.compute();
+				System.out.printf("%s", feynmanF.getString());
 				System.out.printf("\n\n");
 			}
 		}
 	}
 }
-
-/**
- * <pre>
-n[4] (nBlueArcs[5])
-[5], ThisCount[3], RunningTotal[3]
-[3 1], ThisCount[1], RunningTotal[4]
-[2 0,1], ThisCount[1], RunningTotal[5]
-
-n[6] (nBlueArcs[7])
-[7], ThisCount[15], RunningTotal[15]
-[5 1], ThisCount[6], RunningTotal[21]
-[4 0,1], ThisCount[5], RunningTotal[26]
-[3 2], ThisCount[1], RunningTotal[27]
-[3 0,0,1], ThisCount[3], RunningTotal[30]
-[2 1,1], ThisCount[2], RunningTotal[32]
-[2 0,0,0,1], ThisCount[3], RunningTotal[35]
-
-n[8] (nBlueArcs[9])
-[9], ThisCount[105], RunningTotal[105]
-[7 1], ThisCount[45], RunningTotal[150]
-[6 0,1], ThisCount[35], RunningTotal[185]
-[5 2], ThisCount[9], RunningTotal[194]
-[5 0,0,1], ThisCount[24], RunningTotal[218]
-[4 1,1], ThisCount[15], RunningTotal[233]
-[4 0,0,0,1], ThisCount[21], RunningTotal[254]
-[3 3], ThisCount[1], RunningTotal[255]
-[3 0,2], ThisCount[5], RunningTotal[260]
-[3 1,0,1], ThisCount[9], RunningTotal[269]
-[3 0,0,0,0,1], ThisCount[15], RunningTotal[284]
-[2 2,1], ThisCount[3], RunningTotal[287]
-[2 0,1,1], ThisCount[8], RunningTotal[295]
-[2 1,0,0,1], ThisCount[9], RunningTotal[304]
-[2 0,0,0,0,0,1], ThisCount[15], RunningTotal[319] *
- * </pre>
- */
