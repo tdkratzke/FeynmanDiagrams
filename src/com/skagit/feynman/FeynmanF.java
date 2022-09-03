@@ -7,11 +7,11 @@ import java.util.TreeMap;
 
 public class FeynmanF {
 	final public int _nBlueArcs;
-	final public int _modValue;
+	final public long _modValue;
 	final public boolean _trackBlueVectorSets;
 	final public boolean _dumpResults;
 	final public TreeMap<Integer, BlueVectorSet> _blueVectorSets;
-	private int _feynmanF;
+	int _feynmanF;
 
 	FeynmanF(final int n, final int modValue, final boolean trackBlueVectorSets, final boolean dumpResults) {
 		_nBlueArcs = n + 1;
@@ -71,7 +71,7 @@ public class FeynmanF {
 		};
 	}
 
-	static int getNBlueArcs(final int[] blueVector) {
+	static int computeNBlueArcs(final int[] blueVector) {
 		final int len = blueVector.length;
 		int nBlueArcs = blueVector[0];
 		for (int k = 1; k < len; ++k) {
@@ -158,16 +158,28 @@ public class FeynmanF {
 		return getString();
 	}
 
+	static String getString(final int[] intArr) {
+		final int n = intArr == null ? 0 : intArr.length;
+		String s = "[";
+		for (int k = 0; k < n; ++k) {
+			s += String.format((k == 0 ? "" : ",") + "%d", intArr[k]);
+		}
+		s += "]";
+		return s;
+	}
+
 	/** Computes a + b*c. */
-	int accumulate(int a, int b, int c) {
+	int accumulate(long a, long b, long c) {
 		if (_modValue < 2) {
-			return a + b * c;
+			return (int) (a + b * c);
 		}
 		a %= _modValue;
 		b %= _modValue;
 		c %= _modValue;
-		final int answer = (a + ((b * c) % _modValue)) % _modValue;
-		return answer;
+		final long bc = (b * c) % _modValue;
+		final long abc = (a + bc) % _modValue;
+		final long answer = abc % _modValue;
+		return (int) answer;
 	}
 
 	public static int feynmanF(final int n) {
@@ -178,7 +190,7 @@ public class FeynmanF {
 		return feynmanF._feynmanF;
 	}
 
-	public final static void main(final String[] args) {
+	public final static void mainx(final String[] args) {
 		final boolean doSingleBlueVector = false;
 		if (doSingleBlueVector) {
 			final int[] blueVector = stringToBlueVector("[5]");

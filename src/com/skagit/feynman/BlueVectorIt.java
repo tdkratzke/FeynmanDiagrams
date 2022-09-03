@@ -8,15 +8,17 @@ public class BlueVectorIt {
 	private final int _nBlueArcs;
 
 	public static int[] getInitialBlueVector(final int nBlueArcs) {
-		if (nBlueArcs % 2 == 1) {
+		if (nBlueArcs % 2 == 0 || nBlueArcs == 1) {
+			return null;
+		}
+		if (nBlueArcs == 3) {
 			return new int[] {
-					2, (nBlueArcs - 5) / 2, 1
-			};
-		} else {
-			return new int[] {
-					2, (nBlueArcs - 2) / 2
+					3
 			};
 		}
+		return new int[] {
+				2, (nBlueArcs - 5) / 2, 1
+		};
 	}
 
 	public BlueVectorIt(final int n) {
@@ -25,8 +27,8 @@ public class BlueVectorIt {
 
 	public BlueVectorIt(final int[] start, final int[] stop) {
 		_next = FeynmanF.compress(start.clone());
-		_nBlueArcs = FeynmanF.getNBlueArcs(_next);
-		_stop = stop == null ? _next : FeynmanF.compress(stop.clone());
+		_nBlueArcs = FeynmanF.computeNBlueArcs(_next);
+		_stop = stop == null ? _next.clone() : FeynmanF.compress(stop.clone());
 	}
 
 	public boolean hasNext() {
@@ -120,14 +122,15 @@ public class BlueVectorIt {
 	public static void main(final String[] args) {
 		final int[] start = FeynmanF.getInitialBlueVector(9, 3);
 		final int[] stop = FeynmanF.getInitialBlueVector(9, 4);
-		final BlueVectorIt it0 = new BlueVectorIt(start, stop);
-		final BlueVectorIt it1 = new BlueVectorIt(/* n= */8);
-		final BlueVectorIt it2 = new BlueVectorIt(new int[] {
-				5, 2
-		}, null);
-		while (it0.hasNext()) {
-			System.out.printf("%s", FeynmanF.blueVectorToString(it0.next()));
-			if (it0.hasNext()) {
+		// final BlueVectorIt it0 = new BlueVectorIt(start, stop);
+		final BlueVectorIt it1 = new BlueVectorIt(/* n= */10);
+		// final BlueVectorIt it2 = new BlueVectorIt(new int[] {
+		// 5, 2
+		// }, null);
+		final BlueVectorIt it = it1;
+		while (it.hasNext()) {
+			System.out.printf("%s", FeynmanF.blueVectorToString(it.next()));
+			if (it.hasNext()) {
 				System.out.println();
 			}
 		}
