@@ -51,16 +51,18 @@ public class FeynmanF2 extends FeynmanF {
 	}
 
 	public final static void main(final String[] args) {
-		for (int k = 2; k < 24; k += 2) {
-			System.out.printf("\n\n");
-			final FeynmanF feynmanF = new FeynmanF(k, 1000000007, false, true);
-			final FeynmanF2 feynmanF2 = new FeynmanF2(k, 1000000007, false, true);
+		for (int k = 2; k <= 26; k += 2) {
+			final FeynmanF feynmanF = new FeynmanF(k, 1000000007, false, false);
+			final FeynmanF2 feynmanF2 = new FeynmanF2(k, 1000000007, false, false);
 			feynmanF.compute();
 			feynmanF2.compute();
+			final int f = feynmanF._feynmanF;
+			final int f2 = feynmanF2._feynmanF;
 			System.out.printf("\nk[%d] feynmanF[%d] feynmanF2[%d]", //
-					k, feynmanF._feynmanF, feynmanF2._feynmanF);
-			if (feynmanF._feynmanF != feynmanF2._feynmanF) {
-				final int x = 0;
+					k, f, f2);
+			if (f != f2) {
+				System.out.printf("\n\nDiscrepency!: n[%d] feynmanF[%d] feynmanF2[%d]", //
+						k, f, f2);
 			}
 		}
 	}
