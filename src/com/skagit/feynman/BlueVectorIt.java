@@ -26,9 +26,9 @@ public class BlueVectorIt {
 	}
 
 	public BlueVectorIt(final int[] start, final int[] stop) {
-		_next = FeynmanF.compress(start.clone());
-		_nBlueArcs = FeynmanF.computeNBlueArcs(_next);
-		_stop = stop == null ? _next.clone() : FeynmanF.compress(stop.clone());
+		_next = BlueGraph.compress(start.clone());
+		_nBlueArcs = BlueGraph.computeNBlueArcs(_next);
+		_stop = stop == null ? _next.clone() : BlueGraph.compress(stop.clone());
 	}
 
 	public boolean hasNext() {
@@ -118,10 +118,27 @@ public class BlueVectorIt {
 		return returnValue;
 	}
 
+	public static int[] getInitialBlueVector(final int nBlueArcs, final int pathLength) {
+		if (nBlueArcs == pathLength) {
+			return new int[] {
+					nBlueArcs
+			};
+		}
+		final int nInCycles = nBlueArcs - pathLength;
+		if (nInCycles % 2 == 1) {
+			return new int[] {
+					pathLength, (nInCycles - 3) / 2, 1
+			};
+		}
+		return new int[] {
+				pathLength, nInCycles / 2
+		};
+	}
+
 	@SuppressWarnings("unused")
 	public static void main(final String[] args) {
-		final int[] start = FeynmanF.getInitialBlueVector(9, 3);
-		final int[] stop = FeynmanF.getInitialBlueVector(9, 4);
+		final int[] start = getInitialBlueVector(9, 3);
+		final int[] stop = getInitialBlueVector(9, 4);
 		// final BlueVectorIt it0 = new BlueVectorIt(start, stop);
 		final BlueVectorIt it1 = new BlueVectorIt(/* n= */10);
 		// final BlueVectorIt it2 = new BlueVectorIt(new int[] {
@@ -129,7 +146,7 @@ public class BlueVectorIt {
 		// }, null);
 		final BlueVectorIt it = it1;
 		while (it.hasNext()) {
-			System.out.printf("%s", FeynmanF.blueVectorToString(it.next()));
+			System.out.printf("%s", BlueGraph.blueVectorToString(it.next()));
 			if (it.hasNext()) {
 				System.out.println();
 			}

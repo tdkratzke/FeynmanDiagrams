@@ -1,9 +1,9 @@
 package com.skagit.feynman;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 
 public class BlueGraph {
-	final private FeynmanF _feynmanF;
 	final private int[] _blueVector;
 	final private BitSet[] _matchedNodesS;
 	final private int[] _componentSizes;
@@ -13,12 +13,7 @@ public class BlueGraph {
 	private int _nUnmatchedInConnectedToPath;
 
 	public BlueGraph(final int[] blueVector) {
-		this(null, blueVector);
-	}
-
-	public BlueGraph(final FeynmanF feynmanF, final int[] blueVector) {
-		_feynmanF = feynmanF;
-		_blueVector = FeynmanF.compress(blueVector);
+		_blueVector = compress(blueVector);
 		final int blueVectorLength = _blueVector.length;
 
 		/** Compute nBlueComponents, _maxCycleSize, and _nRedEdgesToPlace. */
@@ -61,7 +56,7 @@ public class BlueGraph {
 	}
 
 	/** The real hammer; count ways to complete the red edges. */
-	private int recursiveGetNRedCompletions(final int nRedEdgesPlaced) {
+	private long recursiveGetNRedCompletions(final int nRedEdgesPlaced) {
 		if (_matchedNodesS == null) {
 			return 0;
 		}
@@ -70,15 +65,16 @@ public class BlueGraph {
 		}
 		final int[] pair = getNodeToMatch(/* afterPair= */null);
 
-		int nRedCompletions = 0;
+		long nRedCompletions = 0;
 
 		/** Count ways to match pair into components that are connectedToPath. */
 		if (_nUnmatchedInConnectedToPath > 2) {
 			final int[] pairX = getNodeToMatch(/* afterPair= */pair);
 			matchOrUnMatch(pair, pairX, /* match= */true);
-			final int thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
+			final long thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 			matchOrUnMatch(pair, pairX, /* match= */false);
-			nRedCompletions = accumulate(nRedCompletions, (_nUnmatchedInConnectedToPath - 1), thisNRedCompletions);
+			nRedCompletions = (nRedCompletions + (_nUnmatchedInConnectedToPath - 1) * thisNRedCompletions)
+					% FeynmanF._Modulo;
 		}
 
 		/** Count ways to match pair into components that are not connectedToPath. */
@@ -93,19 +89,12 @@ public class BlueGraph {
 						k0X, 0
 				};
 				matchOrUnMatch(pair, pairX, /* match= */true);
-				final int thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
+				final long thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 				matchOrUnMatch(pair, pairX, /* match= */false);
-				nRedCompletions = accumulate(nRedCompletions, 1, thisNRedCompletions);
+				nRedCompletions = (nRedCompletions + thisNRedCompletions) % FeynmanF._Modulo;
 			}
 		}
 		return nRedCompletions;
-	}
-
-	private int accumulate(final int a, final int b, final int c) {
-		if (_feynmanF != null) {
-			return _feynmanF.accumulate(a, b, c);
-		}
-		return a + b * c;
 	}
 
 	private int[] getNodeToMatch(final int[] afterPair) {
@@ -161,7 +150,70 @@ public class BlueGraph {
 	}
 
 	public int getNRedCompletions() {
-		return recursiveGetNRedCompletions(0);
+		return (int) recursiveGetNRedCompletions(0);
+	}
+
+	static int[] compress(final int[] array) {
+		final int len = array.length;
+		for (int k = len - 1; k >= 0; --k) {
+			if (array[k] > 0) {
+				if (k == len - 1) {
+					return array;
+				}
+				final int[] newArray = new int[k + 1];
+				System.arraycopy(array, 0, newArray, 0, k + 1);
+				return newArray;
+			}
+		}
+		/** All 0s. */
+		return len == 0 ? array : new int[] {};
+	}
+
+	static String blueVectorToString(final int[] blueVector) {
+		String s = String.format("[%d", blueVector[0]);
+		final int n = blueVector.length;
+		for (int k = 1; k < n; ++k) {
+			s += String.format("%s%d", k == 1 ? " " : ",", blueVector[k]);
+		}
+		s += "]";
+		return s;
+	}
+
+	static int[] stringToBlueVector(final String s) {
+		final String[] fields = s.trim().split("[\\s,\\[\\]]+");
+		final int nFieldsX = fields.length;
+		final ArrayList<Integer> fieldsList = new ArrayList<>();
+		for (int k = 0; k < nFieldsX; ++k) {
+			try {
+				fieldsList.add(Integer.parseInt(fields[k]));
+			} catch (final NumberFormatException e) {
+			}
+		}
+		final int nFields = fieldsList.size();
+		if (nFields < 1 || fieldsList.get(0) < 2) {
+			return null;
+		}
+		int maxNonZeroField = 0;
+		for (int k = 0; k < nFields; ++k) {
+			final int field = fieldsList.get(k);
+			if (field > 0) {
+				maxNonZeroField = k;
+			}
+		}
+		final int[] blueVector = new int[maxNonZeroField + 1];
+		for (int k = 0; k <= maxNonZeroField; ++k) {
+			blueVector[k] = fieldsList.get(k);
+		}
+		return blueVector;
+	}
+
+	static int computeNBlueArcs(final int[] blueVector) {
+		final int len = blueVector.length;
+		int nBlueArcs = blueVector[0];
+		for (int k = 1; k < len; ++k) {
+			nBlueArcs += (k + 1) * blueVector[k];
+		}
+		return nBlueArcs;
 	}
 
 }
