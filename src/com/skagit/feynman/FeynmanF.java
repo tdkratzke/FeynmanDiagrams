@@ -22,7 +22,7 @@ public class FeynmanF {
 	public int compute() {
 		long[] alpha = new long[_nStar];
 		Arrays.fill(alpha, 1);
-		long tm = System.currentTimeMillis();
+		long oldMillis = System.currentTimeMillis();
 		for (int n = _nStar; n > 2; n -= 2) {
 			final long[] bravo = new long[n - 2];
 			Arrays.fill(bravo, 0);
@@ -46,10 +46,10 @@ public class FeynmanF {
 				}
 			}
 			alpha = bravo;
-			final long tm2 = System.currentTimeMillis();
-			if (_Debug && tm2 >= tm + _MillisInterval) {
+			final long currentMillis = System.currentTimeMillis();
+			if (_Debug && currentMillis >= oldMillis + _MillisInterval) {
 				System.out.printf("\n%s %d", formatCurrentTime(), n);
-				tm = tm2;
+				oldMillis = currentMillis;
 			}
 		}
 		return (int) alpha[1];
