@@ -10,17 +10,17 @@ public class ParFeynmanF extends FeynmanF {
 	}
 
 	@Override
-	protected int[] getBravo(final int[] alpha) {
+	protected long[] getBravo(final long[] alpha) {
 		final int n = alpha.length;
-		final int[] bravo = new int[n - 2];
-		Arrays.fill(bravo, 0);
+		final long[] bravo = new long[n - 2];
+		Arrays.fill(bravo, 0L);
 		for (int i = 0; i < _NWorkers; ++i) {
 			updateBravoSlice(alpha, bravo, i);
 		}
 		return bravo;
 	}
 
-	private void updateBravoSlice(final int[] alpha, final int[] bravo, final int i) {
+	private void updateBravoSlice(final long[] alpha, final long[] bravo, final int i) {
 		final int n = bravo.length;
 		for (int ii = i; ii < n; ii += _NWorkers) {
 			/** ii == n-2 leaves exactly 1 vertex in the cycles. Can't have that. */
@@ -28,7 +28,7 @@ public class ParFeynmanF extends FeynmanF {
 				continue;
 			}
 			/** Update each ii for open/open red edges. */
-			bravo[ii] = accumulate(bravo[ii], alpha[ii + 2], ii + 2);
+			bravo[ii] = (bravo[ii] + alpha[ii + 2] * (ii + 2)) % _Modulo;
 			/**
 			 * <pre>
 			 * Update each ii for open/cycle red edges.
@@ -39,9 +39,9 @@ public class ParFeynmanF extends FeynmanF {
 			 * Since k >= 0, cycleLen <= ii + 2
 			 * </pre>
 			 */
-			for (int cycleLen = Math.max(2, ii - n + 1); cycleLen <= ii + 2; ++cycleLen) {
+			for (int cycleLen = Math.max(2, ii - n + 1); cycleLen <= ii + 2L; ++cycleLen) {
 				final int k = ii - cycleLen + 2;
-				bravo[ii] = accumulate(bravo[ii], 1, alpha[k]);
+				bravo[ii] = (bravo[ii] + alpha[k]) % _Modulo;
 			}
 		}
 	}

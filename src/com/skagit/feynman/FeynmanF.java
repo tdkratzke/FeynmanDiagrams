@@ -9,9 +9,9 @@ import java.util.Arrays;
 public class FeynmanF {
 	final static DateTimeFormatter _TimeFormatter = DateTimeFormatter.ofPattern("MMM-dd hh:mm:ss");
 
-	final static int _Modulo = 1000000007;
-	final static boolean _Debug = false;
-	final static long _MillisInterval = -1L;
+	final static long _Modulo = 1000000007;
+	final static boolean _Debug = true;
+	final static long _MillisInterval = 5000L;
 
 	protected final int _nStar;
 	private long _OldMillis;
@@ -20,8 +20,8 @@ public class FeynmanF {
 		_nStar = nStar;
 	}
 
-	public int compute() {
-		int[] alpha = new int[_nStar];
+	public long compute() {
+		long[] alpha = new long[_nStar];
 		Arrays.fill(alpha, 1);
 		alpha[_nStar - 2] = 0;
 		_OldMillis = System.currentTimeMillis();
@@ -36,10 +36,10 @@ public class FeynmanF {
 		return alpha[1];
 	}
 
-	protected int[] getBravo(final int[] alpha) {
+	protected long[] getBravo(final long[] alpha) {
 		final int n = alpha.length;
-		final int[] bravo = new int[n - 2];
-		Arrays.fill(bravo, 0);
+		final long[] bravo = new long[n - 2];
+		Arrays.fill(bravo, 0L);
 		for (int k = 1; k <= n; ++k) {
 			final int nInCycles = n - k;
 			if (nInCycles == 1) {
@@ -48,7 +48,7 @@ public class FeynmanF {
 			final long multiplier = alpha[k - 1];
 			if (k > 2) {
 				final int i = k - 3;
-				bravo[i] = accumulate(bravo[i], multiplier, k - 1);
+				bravo[i] = (bravo[i] + multiplier * (k - 1)) % _Modulo;
 			}
 			final int maxCycleLen = n - k;
 			for (int cycleLen = 2; cycleLen <= maxCycleLen; ++cycleLen) {
@@ -56,7 +56,7 @@ public class FeynmanF {
 					continue;
 				}
 				final int i = k + cycleLen - 3;
-				bravo[i] = accumulate(bravo[i], 1, multiplier);
+				bravo[i] = (bravo[i] + multiplier) % _Modulo;
 			}
 		}
 		return bravo;
@@ -68,58 +68,31 @@ public class FeynmanF {
 		return zonedDateTime.format(_TimeFormatter);
 	}
 
-	static String getString(final int[] intArr) {
-		final int n = intArr == null ? 0 : intArr.length;
+	static String getString(final long[] longArr) {
+		if (true) {
+			return "";
+		}
+		final int n = longArr == null ? 0 : longArr.length;
 		String s = "[";
 		for (int k = 0; k < n; ++k) {
-			s += String.format((k == 0 ? "" : ",") + "%d", intArr[k]);
+			s += String.format((k == 0 ? "" : ",") + "%d", longArr[k]);
 		}
 		s += "]";
 		return s;
 	}
 
-	/** Computes a + b*c. */
-	static int accumulate(long a, long b, long c) {
-		if (_Modulo < 2) {
-			return (int) (a + b * c);
-		}
-		a %= _Modulo;
-		b %= _Modulo;
-		c %= _Modulo;
-		final long bc = (b * c) % _Modulo;
-		final long abc = (a + bc) % _Modulo;
-		return (int) (abc % _Modulo);
-	}
-
+	@SuppressWarnings("unused")
 	public static void main(final String[] args) {
 		System.out.printf("\n%s", formatCurrentTime());
-		for (int nStar = 4; nStar <= 30; nStar += 2) {
+		for (int nStar = 50000; nStar <= 50000; nStar += 2) {
 			final FeynmanF feynmanF = new FeynmanF(nStar);
 			final FeynmanF parFeynmanF = new ParFeynmanF(nStar);
 			final FeynmanF crudeFeynmanF = new CrudeFeynmanF(nStar);
-			final int f = feynmanF.compute();
-			final int parF = parFeynmanF.compute();
-			final int crudeF = crudeFeynmanF.compute();
-			System.out.printf("\n%s nStar[%d] F[%d] parF[%d] crudeF[%d]\n", //
+			final long crudeF = 0; // crudeFeynmanF.compute();
+			final long f = feynmanF.compute();
+			final long parF = parFeynmanF.compute();
+			System.out.printf("\n%s nStar[%d] crudeF[%d] F[%d] parF[%d]\n", //
 					formatCurrentTime(), nStar, f, parF, crudeF);
 		}
 	}
 }
-
-/**
- * <pre>
-
-Sep-15 07:55:42
-Sep-15 07:55:42 4: [0,5]
-Sep-15 07:55:42 nStar[4] feynmanF[5]
-
-Sep-15 07:55:42 6: [3,5,0,9]
-Sep-15 07:55:42 4: [0,35]
-Sep-15 07:55:42 nStar[6] feynmanF[35]
-
-Sep-15 07:55:42 8: [3,5,7,9,0,13]
-Sep-15 07:55:42 6: [17,35,0,89]
-Sep-15 07:55:42 4: [0,319]
-Sep-15 07:55:42 nStar[8] feynmanF[319]
- * </pre>
- */

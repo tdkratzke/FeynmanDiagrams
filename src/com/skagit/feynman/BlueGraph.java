@@ -65,7 +65,7 @@ public class BlueGraph {
 		}
 		final int[] pair = getNodeToMatch(/* afterPair= */null);
 
-		long nRedCompletions = 0;
+		long nRedCompletions = 0L;
 
 		/** Count ways to match pair into components that are connectedToPath. */
 		if (_nUnmatchedInConnectedToPath > 2) {
@@ -73,8 +73,8 @@ public class BlueGraph {
 			matchOrUnMatch(pair, pairX, /* match= */true);
 			final long thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 			matchOrUnMatch(pair, pairX, /* match= */false);
-			nRedCompletions = FeynmanF.accumulate(nRedCompletions, _nUnmatchedInConnectedToPath - 1,
-					thisNRedCompletions);
+			nRedCompletions = (nRedCompletions + (_nUnmatchedInConnectedToPath - 1) * thisNRedCompletions)
+					% FeynmanF._Modulo;
 		}
 
 		/** Count ways to match pair into components that are not connectedToPath. */
@@ -91,7 +91,7 @@ public class BlueGraph {
 				matchOrUnMatch(pair, pairX, /* match= */true);
 				final long thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 				matchOrUnMatch(pair, pairX, /* match= */false);
-				nRedCompletions = FeynmanF.accumulate(nRedCompletions, 1, thisNRedCompletions);
+				nRedCompletions = (nRedCompletions + thisNRedCompletions) % FeynmanF._Modulo;
 			}
 		}
 		return nRedCompletions;
@@ -149,8 +149,8 @@ public class BlueGraph {
 		}
 	}
 
-	public int getNRedCompletions() {
-		return (int) recursiveGetNRedCompletions(0);
+	public long getNRedCompletions() {
+		return recursiveGetNRedCompletions(0);
 	}
 
 	static int[] compress(final int[] array) {
