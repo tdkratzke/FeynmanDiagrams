@@ -20,11 +20,11 @@ public class FeynmanF {
 	}
 
 	public int compute() {
-		long[] alpha = new long[_nStar];
+		int[] alpha = new int[_nStar];
 		Arrays.fill(alpha, 1);
 		long oldMillis = System.currentTimeMillis();
 		for (int n = _nStar; n > 2; n -= 2) {
-			final long[] bravo = new long[n - 2];
+			final int[] bravo = new int[n - 2];
 			Arrays.fill(bravo, 0);
 			for (int k = 1; k <= n; ++k) {
 				final int nInCycles = n - k;
@@ -34,7 +34,7 @@ public class FeynmanF {
 				final long multiplier = alpha[k - 1];
 				if (k > 2) {
 					final int i = k - 3;
-					bravo[i] = (bravo[i] + (multiplier * (k - 1))) % _Modulo;
+					bravo[i] = (int) (bravo[i] + (multiplier * (k - 1))) % _Modulo;
 				}
 				final int maxCycleLen = n - k;
 				for (int cycleLen = 2; cycleLen <= maxCycleLen; ++cycleLen) {
@@ -42,7 +42,7 @@ public class FeynmanF {
 						continue;
 					}
 					final int i = k + cycleLen - 3;
-					bravo[i] = (bravo[i] + multiplier) % _Modulo;
+					bravo[i] = (int) (bravo[i] + multiplier) % _Modulo;
 				}
 			}
 			alpha = bravo;
@@ -52,17 +52,7 @@ public class FeynmanF {
 				oldMillis = currentMillis;
 			}
 		}
-		return (int) alpha[1];
-	}
-
-	static String longArrToString(final long[] longArr) {
-		final int n = longArr == null ? 0 : longArr.length;
-		String s = "[";
-		for (int k = 0; k < n; ++k) {
-			s += String.format((k == 0 ? "" : ",") + "%d", longArr[k]);
-		}
-		s += "]";
-		return s;
+		return alpha[1];
 	}
 
 	static String formatCurrentTime() {
