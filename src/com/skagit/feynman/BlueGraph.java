@@ -73,8 +73,8 @@ public class BlueGraph {
 			matchOrUnMatch(pair, pairX, /* match= */true);
 			final long thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 			matchOrUnMatch(pair, pairX, /* match= */false);
-			nRedCompletions = (nRedCompletions + (_nUnmatchedInConnectedToPath - 1) * thisNRedCompletions)
-					% FeynmanF._Modulo;
+			nRedCompletions = FeynmanF.accumulate(nRedCompletions, _nUnmatchedInConnectedToPath - 1,
+					thisNRedCompletions);
 		}
 
 		/** Count ways to match pair into components that are not connectedToPath. */
@@ -91,7 +91,7 @@ public class BlueGraph {
 				matchOrUnMatch(pair, pairX, /* match= */true);
 				final long thisNRedCompletions = recursiveGetNRedCompletions(nRedEdgesPlaced + 1);
 				matchOrUnMatch(pair, pairX, /* match= */false);
-				nRedCompletions = (nRedCompletions + thisNRedCompletions) % FeynmanF._Modulo;
+				nRedCompletions = FeynmanF.accumulate(nRedCompletions, 1, thisNRedCompletions);
 			}
 		}
 		return nRedCompletions;
