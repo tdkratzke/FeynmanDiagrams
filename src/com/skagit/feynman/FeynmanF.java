@@ -13,30 +13,23 @@ public class FeynmanF {
 	final static boolean _Debug = true;
 	final static long _MillisInterval = 10000L;
 	// final static int _LoN = 4, _HiN = 26;
-	final static int _LoN = 1000, _HiN = 1010;
+	final static int _LoN = 2000, _HiN = 2004;
 	final static boolean _RunCrude = false;
 	final static boolean _RunF = true;
 	final static boolean _RunPar = true;
 
-	protected final int _nStar;
-	protected long _alpha[], _bravo[];
-
-	FeynmanF(final int nStar) {
-		_nStar = nStar;
-		_alpha = new long[_nStar];
-		_bravo = new long[_nStar];
-	}
-
-	public long compute() {
-		Arrays.fill(_alpha, 1);
-		_alpha[_nStar - 2] = 0;
+	public long compute(final int nStar) {
+		long[] alpha = new long[nStar];
+		long[] bravo = new long[nStar];
+		Arrays.fill(alpha, 1);
+		alpha[nStar - 2] = 0;
 		long oldMillis = System.currentTimeMillis();
 		final String startTimeString = formatCurrentTime();
-		int oldN = _nStar;
-		for (int alphaN = _nStar; alphaN > 2; alphaN -= 2) {
+		int oldN = nStar;
+		for (int alphaN = nStar; alphaN > 2; alphaN -= 2) {
 			if (_Debug) {
 				final long millis = System.currentTimeMillis();
-				if ((millis >= oldMillis + _MillisInterval) || alphaN >= _nStar - 10 || alphaN < 100) {
+				if ((millis >= oldMillis + _MillisInterval) || alphaN >= nStar - 10 || alphaN < 100) {
 					final double secs = (millis - oldMillis) / 1000.0;
 					final int nDone = oldN - alphaN;
 					final double avg = secs > 0d ? (nDone / secs) : 0d;
@@ -46,27 +39,27 @@ public class FeynmanF {
 					oldMillis = System.currentTimeMillis();
 				}
 			}
-			fillInBravo(alphaN);
-			final long[] charlie = _alpha;
-			_alpha = _bravo;
-			_bravo = charlie;
+			fillInBravo(alphaN, alpha, bravo);
+			final long[] charlie = alpha;
+			alpha = bravo;
+			bravo = charlie;
 		}
 		System.out.printf("\n\nStarted at %s, finished at %s", startTimeString, formatCurrentTime());
-		return _alpha[1];
+		return alpha[1];
 	}
 
-	protected void fillInBravo(final int alphaN) {
+	protected void fillInBravo(final int alphaN, final long[] alpha, final long[] bravo) {
 		final int bravoN = alphaN - 2;
-		Arrays.fill(_bravo, 0, bravoN, 0L);
+		Arrays.fill(bravo, 0, bravoN, 0L);
 		for (int k = 1; k <= alphaN; ++k) {
 			final int nInCycles = alphaN - k;
 			if (nInCycles == 1) {
 				continue;
 			}
-			final long multiplier = _alpha[k - 1];
+			final long multiplier = alpha[k - 1];
 			if (k > 2) {
 				final int i = k - 3;
-				_bravo[i] = (_bravo[i] + multiplier * (k - 1)) % _Modulo;
+				bravo[i] = (bravo[i] + multiplier * (k - 1)) % _Modulo;
 			}
 			final int maxCycleLen = alphaN - k;
 			for (int cycleLen = 2; cycleLen <= maxCycleLen; ++cycleLen) {
@@ -74,7 +67,7 @@ public class FeynmanF {
 					continue;
 				}
 				final int i = k + cycleLen - 3;
-				_bravo[i] = (_bravo[i] + multiplier) % _Modulo;
+				bravo[i] = (bravo[i] + multiplier) % _Modulo;
 			}
 		}
 	}
@@ -97,17 +90,29 @@ public class FeynmanF {
 		return s;
 	}
 
+	public void shutDown() {
+	}
+
 	@SuppressWarnings("unused")
 	public static void main(final String[] args) {
+		final FeynmanF crudeFeynmanF = _RunCrude ? new CrudeFeynmanF() : null;
+		final FeynmanF feynmanF = _RunF ? new FeynmanF() : null;
+		final FeynmanF parFeynmanF = _RunPar ? new ParFeynmanF() : null;
 		for (int nStar = _LoN; nStar <= _HiN; nStar += 2) {
-			final FeynmanF crudeFeynmanF = new CrudeFeynmanF(nStar);
-			final FeynmanF feynmanF = new FeynmanF(nStar);
-			final FeynmanF parFeynmanF = new ParFeynmanF(nStar);
-			final long crudeF = _RunCrude ? crudeFeynmanF.compute() : 0L;
-			final long f = _RunF ? feynmanF.compute() : 0L;
-			final long parF = _RunPar ? parFeynmanF.compute() : 0L;
+			final long crudeF = _RunCrude ? crudeFeynmanF.compute(nStar) : 0L;
+			final long f = _RunF ? feynmanF.compute(nStar) : 0L;
+			final long parF = _RunPar ? parFeynmanF.compute(nStar) : 0L;
 			System.out.printf("\n%s nStar[%d] crudeF[%d] F[%d] parF[%d]\n", //
 					formatCurrentTime(), nStar, crudeF, f, parF);
+		}
+		if (_RunCrude) {
+			crudeFeynmanF.shutDown();
+		}
+		if (_RunF) {
+			feynmanF.shutDown();
+		}
+		if (_RunPar) {
+			parFeynmanF.shutDown();
 		}
 	}
 }

@@ -1,17 +1,11 @@
 package com.skagit.feynman;
 
 public class CrudeFeynmanF extends FeynmanF {
-	final public int _nBlueArcs;
-
-	CrudeFeynmanF(final int nStar) {
-		super(nStar);
-		_nBlueArcs = nStar + 1;
-	}
 
 	@Override
-	public long compute() {
+	public long compute(final int nStar) {
 		long feynmanF = 0L;
-		final BlueVectorIt it = new BlueVectorIt(_nStar);
+		final BlueVectorIt it = new BlueVectorIt(nStar);
 		while (it.hasNext()) {
 			final int[] blueVector = it.next();
 			final BlueGraph blueGraph = new BlueGraph(blueVector);

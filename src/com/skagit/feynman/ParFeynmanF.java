@@ -8,13 +8,12 @@ public class ParFeynmanF extends FeynmanF {
 	final private static int _MinNPerSlice = 100;
 	final private FeynmanThreadPool _threadPool;
 
-	ParFeynmanF(final int nStar) {
-		super(nStar);
+	public ParFeynmanF() {
 		_threadPool = new FeynmanThreadPool();
 	}
 
 	@Override
-	protected void fillInBravo(final int alphaN) {
+	protected void fillInBravo(final int alphaN, final long[] alpha, final long[] bravo) {
 		final int bravoN = alphaN - 2;
 		Future<?>[] futures = null;
 		final ArrayList<Integer> notTaskedISlices = new ArrayList<>();
@@ -35,7 +34,7 @@ public class ParFeynmanF extends FeynmanF {
 						@Override
 						public void run() {
 							/** ... to here. */
-							updateBravoSlice(alphaN, finalI, finalNSlices);
+							updateBravoSlice(alphaN, alpha, bravo, finalI, finalNSlices);
 						}
 					};
 					futures[i] = _threadPool.submitToWorkers(runnable);
@@ -49,7 +48,7 @@ public class ParFeynmanF extends FeynmanF {
 			notTaskedISlices.add(iSlice);
 		}
 		for (final int iSlice : notTaskedISlices) {
-			updateBravoSlice(alphaN, iSlice, nSlices);
+			updateBravoSlice(alphaN, alpha, bravo, iSlice, nSlices);
 		}
 		try {
 			for (int iWorker = 0; iWorker < nWorkers; ++iWorker) {
@@ -62,19 +61,20 @@ public class ParFeynmanF extends FeynmanF {
 		}
 	}
 
-	private void updateBravoSlice(final int alphaN, final int i, final int nSlices) {
+	private void updateBravoSlice(final int alphaN, final long[] alpha, final long[] bravo, final int i,
+			final int nSlices) {
 		final int bravoN = alphaN - 2;
 		for (int ii = i; ii < bravoN; ii += nSlices) {
 			/** ii == bravoN - 2 leaves exactly 1 vertex in the cycles. Can't have that. */
 			if (ii == bravoN - 2) {
-				_bravo[ii] = 0L;
+				bravo[ii] = 0L;
 				continue;
 			}
 			/**
 			 * Update each ii for open/open red edges. Note that we initialize _bravo[ii]
 			 * here.
 			 */
-			_bravo[ii] = (_alpha[ii + 2] * (ii + 2)) % _Modulo;
+			bravo[ii] = (alpha[ii + 2] * (ii + 2)) % _Modulo;
 			/**
 			 * <pre>
 			 * Update each ii for open/cycle red edges.
@@ -91,12 +91,13 @@ public class ParFeynmanF extends FeynmanF {
 			final int hiCycleLen = ii + 2;
 			for (int cycleLen = loCycleLen; cycleLen <= hiCycleLen; ++cycleLen) {
 				final int k = ii + 2 - cycleLen;
-				_bravo[ii] = (_bravo[ii] + _alpha[k]) % _Modulo;
+				bravo[ii] = (bravo[ii] + alpha[k]) % _Modulo;
 			}
 		}
 	}
 
-	protected void shutDown() {
+	@Override
+	public void shutDown() {
 		_threadPool.shutDown();
 	}
 
