@@ -13,9 +13,9 @@ public class FeynmanF {
 	final static boolean _Debug = true;
 	final static long _MillisInterval = 10000L;
 	// final static int _LoN = 4, _HiN = 26;
-	final static int _LoN = 50000, _HiN = 50000;
+	final static int _LoN = 1000, _HiN = 1010;
 	final static boolean _RunCrude = false;
-	final static boolean _RunF = false;
+	final static boolean _RunF = true;
 	final static boolean _RunPar = true;
 
 	protected final int _nStar;
@@ -85,7 +85,7 @@ public class FeynmanF {
 		return zonedDateTime.format(_TimeFormatter);
 	}
 
-	static String getString(final long[] longArr, final int len) {
+	static String getLongArrString(final long[] longArr, final int len) {
 		if (true) {
 			return "";
 		}
@@ -100,9 +100,9 @@ public class FeynmanF {
 	@SuppressWarnings("unused")
 	public static void main(final String[] args) {
 		for (int nStar = _LoN; nStar <= _HiN; nStar += 2) {
+			final FeynmanF crudeFeynmanF = new CrudeFeynmanF(nStar);
 			final FeynmanF feynmanF = new FeynmanF(nStar);
 			final FeynmanF parFeynmanF = new ParFeynmanF(nStar);
-			final FeynmanF crudeFeynmanF = new CrudeFeynmanF(nStar);
 			final long crudeF = _RunCrude ? crudeFeynmanF.compute() : 0L;
 			final long f = _RunF ? feynmanF.compute() : 0L;
 			final long parF = _RunPar ? parFeynmanF.compute() : 0L;
