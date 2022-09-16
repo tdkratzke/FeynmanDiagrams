@@ -12,10 +12,9 @@ public class FeynmanF {
 	final static long _Modulo = 1000000007;
 	final static boolean _Debug = true;
 	final static long _MillisInterval = 10000L;
-	// final static int _LoN = 4, _HiN = 26;
-	final static int _LoN = 2000, _HiN = 2004;
+	final static int _LoN = 50000, _HiN = 50000;
 	final static boolean _RunCrude = false;
-	final static boolean _RunF = true;
+	final static boolean _RunF = false;
 	final static boolean _RunPar = true;
 
 	public long compute(final int nStar) {

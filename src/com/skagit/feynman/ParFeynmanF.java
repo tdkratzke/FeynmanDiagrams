@@ -6,15 +6,30 @@ import java.util.concurrent.Future;
 
 public class ParFeynmanF extends FeynmanF {
 	final private static int _MinNPerSlice = 100;
+	final private static boolean _UsePar = true;
+
 	final private FeynmanThreadPool _threadPool;
 
 	public ParFeynmanF() {
-		_threadPool = new FeynmanThreadPool();
+		_threadPool = _UsePar ? new FeynmanThreadPool() : null;
 	}
 
 	@Override
 	protected void fillInBravo(final int alphaN, final long[] alpha, final long[] bravo) {
 		final int bravoN = alphaN - 2;
+		if (!_UsePar) {
+			for (int i = 0; i < bravoN; ++i) {
+				if (i == bravoN - 2) {
+					bravo[i] = 0L;
+					continue;
+				}
+				bravo[i] = (alpha[i + 2] * (i + 2)) % _Modulo;
+				for (int k = 0; k <= i; ++k) {
+					bravo[i] = (bravo[i] + alpha[k]) % _Modulo;
+				}
+			}
+			return;
+		}
 		Future<?>[] futures = null;
 		final ArrayList<Integer> notTaskedISlices = new ArrayList<>();
 		int nSlices = (bravoN + (_MinNPerSlice - 1)) / _MinNPerSlice;
@@ -76,21 +91,9 @@ public class ParFeynmanF extends FeynmanF {
 			 */
 			bravo[ii] = (alpha[ii + 2] * (ii + 2)) % _Modulo;
 			/**
-			 * <pre>
-			 * Update each ii for open/cycle red edges.
-			 * ii + 1 = (k + 1) + cycleLen - 2.
-			 * cycleLen = ii + 2 - k
-			 * Since k < bravoN + 2,
-			 *   cycleLen > ii + 2 - (bravoN + 2) = ii - bravoN or
-			 *   cycleLen >= ii - bravoN + 1.
-			 * Since k >= 0, cycleLen <= ii + 2.
-			 * Finally, note that given cycleLen, k = ii + 2 - cycleLen.
-			 * </pre>
+			 * For small k, you can grab a cycle of appropriate size to leave ii + 1 open.
 			 */
-			final int loCycleLen = Math.max(2, ii - bravoN + 1);
-			final int hiCycleLen = ii + 2;
-			for (int cycleLen = loCycleLen; cycleLen <= hiCycleLen; ++cycleLen) {
-				final int k = ii + 2 - cycleLen;
+			for (int k = 0; k <= ii; ++k) {
 				bravo[ii] = (bravo[ii] + alpha[k]) % _Modulo;
 			}
 		}
@@ -98,7 +101,9 @@ public class ParFeynmanF extends FeynmanF {
 
 	@Override
 	public void shutDown() {
-		_threadPool.shutDown();
+		if (_UsePar) {
+			_threadPool.shutDown();
+		}
 	}
 
 }
