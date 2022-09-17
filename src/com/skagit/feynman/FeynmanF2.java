@@ -12,7 +12,7 @@ public class FeynmanF2 extends FeynmanF1 {
 				bravo[i] = 0L;
 				continue;
 			}
-			bravo[i] = (alpha[i + 2] * (i + 2)) % _Modulo;
+			bravo[i] = (alpha[i + 2] * (i + 2) + cum) % _Modulo;
 			bravo[i] = (bravo[i] + cum) % _Modulo;
 		}
 		return;
