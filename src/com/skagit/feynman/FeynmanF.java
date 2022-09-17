@@ -3,33 +3,33 @@ package com.skagit.feynman;
 import java.util.Arrays;
 
 public class FeynmanF {
-	final static long _Modulo = 1000000007L;
+	final static int _Modulo = 1000000007;
 
 	public static long computeFeynmanF(final int nStar) {
-		long[] alpha = new long[nStar];
-		Arrays.fill(alpha, 1L);
-		alpha[nStar - 2] = 0L;
+		int[] alpha = new int[nStar], bravo = new int[nStar], charlie;
+		Arrays.fill(alpha, 1);
+		alpha[nStar - 2] = 0;
 
 		for (int alphaN = nStar; alphaN > 2; alphaN -= 2) {
 			final int bravoN = alphaN - 2;
-			final long[] bravo = new long[bravoN];
-			long cum = 0L;
+			int cum = 0;
 			for (int i = 0; i < bravoN; ++i) {
 				cum = (cum + alpha[i]) % _Modulo;
 				if (i == bravoN - 2) {
-					bravo[i] = 0L;
+					bravo[i] = 0;
 					continue;
 				}
-				bravo[i] = (alpha[i + 2] * (i + 2L) + cum) % _Modulo;
+				bravo[i] = (int) ((alpha[i + 2] * (i + 2L) + cum) % _Modulo);
 			}
+			charlie = alpha;
 			alpha = bravo;
+			bravo = charlie;
 		}
 		return alpha[1];
 	}
 
 	public static void main(final String[] args) {
 		final int nStar = 50000;
-		final long f = computeFeynmanF(nStar);
-		System.out.printf("nStar[%d] f[%d]", nStar, f);
+		System.out.printf("nStar[%d] f[%d]", nStar, computeFeynmanF(nStar));
 	}
 }
