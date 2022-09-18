@@ -1,4 +1,4 @@
-package com.skagit.feynman;
+package com.skagit.euler781;
 
 import java.util.ArrayList;
 import java.util.BitSet;

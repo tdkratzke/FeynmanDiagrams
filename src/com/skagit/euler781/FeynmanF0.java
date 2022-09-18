@@ -1,4 +1,4 @@
-package com.skagit.feynman;
+package com.skagit.euler781;
 
 public class FeynmanF0 extends FeynmanF1 {
 

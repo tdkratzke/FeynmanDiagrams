@@ -1,4 +1,4 @@
-package com.skagit.feynman;
+package com.skagit.euler781;
 
 public class FeynmanF2 extends FeynmanF1 {
 
@@ -8,14 +8,7 @@ public class FeynmanF2 extends FeynmanF1 {
 		long cum = 0;
 		for (int i = 0; i < bravoN; ++i) {
 			cum = (cum + alpha[i]) % _Modulo;
-			if (i == bravoN - 2) {
-				bravo[i] = 0L;
-				continue;
-			}
-			bravo[i] = (alpha[i + 2] * (i + 2) + cum) % _Modulo;
-			bravo[i] = (bravo[i] + cum) % _Modulo;
+			bravo[i] = (int) ((alpha[i + 2] * (i + 2L) + cum) % _Modulo);
 		}
-		return;
 	}
-
 }
