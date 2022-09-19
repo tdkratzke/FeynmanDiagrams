@@ -3,14 +3,11 @@ package com.skagit.euler781;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
+import com.skagit.util.GetStrings;
+
 public class FeynmanF1 {
-	final static DateTimeFormatter _TimeFormatter = DateTimeFormatter.ofPattern("MMM-dd hh:mm:ss");
 
 	final static long _Modulo = 1000000007;
 	final static boolean _Debug = false;
@@ -34,7 +31,7 @@ public class FeynmanF1 {
 	}
 
 	private long hammer(final int nStar, long[] alpha, long bravo[], final PrintStream debugPs) {
-		final String startTimeString = formatCurrentTime();
+		final String startTimeString = GetStrings.getCurrentTimeString();
 		long oldMillis = System.currentTimeMillis();
 		int oldN = nStar;
 		for (int alphaN = nStar; alphaN > 2; alphaN -= 2) {
@@ -46,7 +43,7 @@ public class FeynmanF1 {
 					final double avg = secs > 0d ? (nDone / secs) : 0d;
 					oldN = alphaN;
 					final String s = String.format("%s n[%d], %d done in %.3f seconds (avg=%.3f/sec).\n", //
-							formatCurrentTime(), alphaN, nDone, secs, avg);
+							GetStrings.getCurrentTimeString(), alphaN, nDone, secs, avg);
 					System.out.print(s);
 					if (debugPs != null) {
 						debugPs.print(s);
@@ -61,7 +58,7 @@ public class FeynmanF1 {
 		}
 		final long f = alpha[1];
 		final String s = String.format("\n\nStarted at %s, finished at %s, f[%d].", //
-				startTimeString, formatCurrentTime(), f);
+				startTimeString, GetStrings.getCurrentTimeString(), f);
 		System.out.print(s);
 		if (debugPs != null) {
 			debugPs.print(s);
@@ -93,12 +90,6 @@ public class FeynmanF1 {
 		}
 	}
 
-	static String formatCurrentTime() {
-		final Instant instant = Instant.ofEpochMilli(System.currentTimeMillis());
-		final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.systemDefault());
-		return zonedDateTime.format(_TimeFormatter);
-	}
-
 	public static void main(final String[] args) {
 		final FeynmanF1 feynmanF0 = _Run0 ? new FeynmanF0() : null;
 		final FeynmanF1 feynmanF1 = _Run1 ? new FeynmanF1() : null;
@@ -108,7 +99,7 @@ public class FeynmanF1 {
 			final long f1 = _Run1 ? feynmanF1.compute(nStar) : 0L;
 			final long f2 = _Run2 ? feynmanF2.compute(nStar) : 0L;
 			System.out.printf("\n%s nStar[%d] f0[%d] f1[%d] f2[%d]\n", //
-					formatCurrentTime(), nStar, f0, f1, f2);
+					GetStrings.getCurrentTimeString(), nStar, f0, f1, f2);
 		}
 	}
 }
