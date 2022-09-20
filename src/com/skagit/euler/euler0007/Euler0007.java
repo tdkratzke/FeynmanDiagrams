@@ -2,7 +2,7 @@ package com.skagit.euler.euler0007;
 
 import java.util.BitSet;
 
-public class Euler007 {
+public class Euler0007 {
 
 	static private int _TargetNumber = 10001;
 
