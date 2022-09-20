@@ -1,4 +1,4 @@
-package com.skagit.euler781;
+package com.skagit.euler.euler0781.Obsolete;
 
 import java.util.Arrays;
 

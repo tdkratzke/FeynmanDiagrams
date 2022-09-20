@@ -1,4 +1,4 @@
-package com.skagit.euler781;
+package com.skagit.euler.euler0781.Obsolete;
 
 public class FeynmanF2 extends FeynmanF1 {
 

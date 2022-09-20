@@ -1,4 +1,4 @@
-package com.skagit.util;
+package com.skagit.euler.util;
 
 import java.time.Instant;
 import java.time.ZoneId;

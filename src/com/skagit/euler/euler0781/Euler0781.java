@@ -1,11 +1,11 @@
-package com.skagit.euler781;
+package com.skagit.euler.euler0781;
 
 import java.util.Arrays;
 
-public class FeynmanF {
+public class Euler0781 {
 	final static int _Modulo = 1000000007;
 
-	public static long computeFeynmanF(final int nStar) {
+	public static long feynmanF(final int nStar) {
 		int[] alpha = new int[nStar], bravo = new int[nStar], charlie;
 		Arrays.fill(alpha, 1);
 
@@ -25,6 +25,6 @@ public class FeynmanF {
 
 	public static void main(final String[] args) {
 		final int nStar = 50000;
-		System.out.printf("nStar[%d] f[%d]", nStar, computeFeynmanF(nStar));
+		System.out.printf("nStar[%d] f[%d]", nStar, feynmanF(nStar));
 	}
 }

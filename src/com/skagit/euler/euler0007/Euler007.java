@@ -1,4 +1,4 @@
-package com.skagit.euler007;
+package com.skagit.euler.euler0007;
 
 import java.util.BitSet;
 
@@ -8,7 +8,7 @@ public class Euler007 {
 
 	static int getNthPrime(final int nStar) {
 		/** From wiki, we get that a good guess for the nth prime is n*ln(n). */
-		for (int k = (int) (2d * nStar / Math.log(nStar));; k *= 2) {
+		for (int k = (int) (nStar / Math.log(nStar));; k *= 2) {
 			final BitSet bitSet = getPrimesUpTo(k);
 			if (bitSet.cardinality() >= _TargetNumber) {
 				int prime = bitSet.nextSetBit(0);

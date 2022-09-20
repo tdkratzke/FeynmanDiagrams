@@ -1,11 +1,11 @@
-package com.skagit.euler781;
+package com.skagit.euler.euler0781.Obsolete;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 
-import com.skagit.util.GetStrings;
+import com.skagit.euler.util.GetStrings;
 
 public class FeynmanF1 {
 
